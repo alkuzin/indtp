@@ -103,9 +103,9 @@ Receivers **SHOULD** discard frames with an incompatible Major version.
 Bitmask controlling protocol behavior and frame structure. The bit layout is defined as follows:
   - `MODE_ID` **(bit(s) 0-1)**: Operating mode selector:
     - `00`: Lite (CRC-16 only);
-    - `01`: Safety (CRC-32 trailer);
-    - `10`: Fast Secure (CMAC-AES trailer);
-    - `11`: Command Secure (HMAC-SHA256 trailer).
+    - `01`: Verified (CRC-32 trailer);
+    - `10`: Trusted (CMAC-AES trailer);
+    - `11`: Critical (HMAC-SHA256 trailer).
   - `BATCH` **(bit(s) 2)**: Batching flag:
     - `0`: Single sample mode (payload contains one data record with an absolute timestamp);
     - `1`: Batch mode (payload section starts with count `N`, followed by `N` records with relative timestamps). See section 4.5.
@@ -175,7 +175,7 @@ Sender and receiver **MUST** share a pre-distributed HMAC key. Strict sequence n
 | Trusted  | 0x02 | CMAC-AES          | 8 bytes      | Anti-spoofing    |
 | Critical | 0x03 | HMAC-SHA256       | 32 bytes     | Max security     |
 
-## 4.5. Timestamp and Batching Strategy
+## 4.5. Timestamp And Batching Strategy
 
 To support efficient high-frequency data transmission, temporal information is
 not stored in the fixed header but is embedded within the payload structure.
