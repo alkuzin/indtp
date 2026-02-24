@@ -6,7 +6,7 @@
 use core::ops::Range;
 use crate::{
     utils::{change_bit, test_bit, create_mask, get_bit_field, set_bit_field},
-    Error, Result, indtp_data
+    prelude::*, indtp_data
 };
 
 /// Protocol operating mode enumeration. Each mode dictates the integrity check
@@ -132,6 +132,7 @@ pub const HEADER_SIZE: usize = size_of::<Header>();
 indtp_data! {
     /// Contains all necessary metadata for routing, versioning, and initial
     /// integrity checking.
+    #[derive(Default)]
     pub struct Header {
         /// Magic number signaling the start of a new frame.
         pub preamble: u32,
@@ -159,7 +160,11 @@ impl Header {
     /// # Returns
     /// - New INDTP header.
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            preamble: INDTP_PREAMBLE,
+            version: INDTP_VERSION,
+            ..Default::default()
+        }
     }
 
     /// Set protocol operating mode.
@@ -243,24 +248,15 @@ impl Header {
     pub fn is_standard_payload(&self) -> bool {
         STANDARD_PAYLOAD_RANGE.contains(&(self.payload_type))
     }
-}
 
-impl Default for Header {
-    /// Construct default implementation of INDTP header.
+    /// Get header size.
     ///
     /// # Returns
-    /// - New implementation of INDTP header with default values.
-    fn default() -> Self {
-        Self {
-            preamble: INDTP_PREAMBLE,
-            version: INDTP_VERSION,
-            flags: 0,
-            device_id: 0,
-            payload_type: 0,
-            sequence: 0,
-            payload_len: 0,
-            crc: 0,
-        }
+    /// - Header size in bytes.
+    #[inline]
+    #[must_use]
+    pub const fn size() -> usize {
+        HEADER_SIZE
     }
 }
 

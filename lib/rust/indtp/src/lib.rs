@@ -38,4 +38,5 @@ pub use types::{Error, Result};
 
 pub(crate) mod prelude {
     pub use zerocopy::{IntoBytes, FromBytes, Immutable, KnownLayout};
+    pub use crate::{Error, Result};
 }
