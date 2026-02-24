@@ -59,7 +59,7 @@ Every frame consists of three distinct sections: a fixed-size header, a variable
 | Trailer | 0 - 32       | Cryptographic tag or integrity check value |
 |         |              |                                            |
 
-![INDTP Frame Structure]()
+![INDTP Frame Structure](../res/frame_structure.png)
 
 ## 3.2. Maximum Transmission Unit (MTU)
 
@@ -85,7 +85,7 @@ It has a fixed size of **14 bytes**.
 | 10     | payload_len  | u16  | 2            |
 | 12     | crc          | u16  | 2            |
 
-![INDTP Header Structure]()
+![INDTP Header Structure](../res/header_structure.png)
 
 ## 4.2. Byte Order
 
@@ -117,8 +117,6 @@ Bitmask controlling protocol behavior and frame structure. The bit layout is def
     - `1`: High priority (critical alarms or commands that **SHOULD** be handled immediately).
   - `RESERVED` **(bit(s) 5-7)**: Reserved for future use.  **MUST** be set to
   `0` by sender and ignored by receiver.
-
-  ![INDTP Header Flags Structure]()
 
 - `device_id` **(offset 6, 1 byte)**: Unique identifier of the source navigation node.
 
@@ -188,6 +186,8 @@ Suitable for low-frequency telemetry.
 The payload begins with a standard data record containing a full absolute
 timestamp (`u32`) in microseconds.
 
+![INDTP Payload Structure BATCH = 0](../res/payload_structure_batch_0.png)
+
 2. **Batch mode** (`BATCH = 1`):
 The payload structure is modified to maximize efficiency:
 
@@ -196,7 +196,7 @@ The payload structure is modified to maximize efficiency:
 - Samples 2..N: Contain relative delta-time (`u16`) in microseconds since
 previous sample followed by sensor data.
 
-![INDTP Payload Structure]()
+![INDTP Payload Structure BATCH = 1](../res/payload_structure_batch_1.png)
 
 ## 4.6 Sequence Number Wrap-Around Handling
 
