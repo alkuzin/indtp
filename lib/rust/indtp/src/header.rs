@@ -6,7 +6,7 @@
 use core::ops::Range;
 use crate::{
     utils::{change_bit, test_bit, create_mask, get_bit_field, set_bit_field},
-    prelude::*, indtp_data
+    prelude::*, indtp_data, types::Packable,
 };
 
 /// Protocol operating mode enumeration. Each mode dictates the integrity check
@@ -248,17 +248,9 @@ impl Header {
     pub fn is_standard_payload(&self) -> bool {
         STANDARD_PAYLOAD_RANGE.contains(&(self.payload_type))
     }
-
-    /// Get header size.
-    ///
-    /// # Returns
-    /// - Header size in bytes.
-    #[inline]
-    #[must_use]
-    pub const fn size() -> usize {
-        HEADER_SIZE
-    }
 }
+
+impl Packable for Header {}
 
 #[cfg(test)]
 mod tests {
