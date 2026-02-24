@@ -5,8 +5,8 @@
 
 use core::ops::Range;
 use crate::{
-    Error, Result,
     utils::{change_bit, test_bit, create_mask, get_bit_field, set_bit_field},
+    Error, Result, indtp_data
 };
 
 /// Protocol operating mode enumeration. Each mode dictates the integrity check
@@ -126,27 +126,31 @@ pub const STANDARD_PAYLOAD_RANGE: Range<u8> = 0x00..0x7F + 1;
 /// Vendor-specific payload type range.
 pub const VENDOR_PAYLOAD_RANGE: Range<u8> = 0x80..0xFF;
 
-/// Contains all necessary metadata for routing, versioning, and initial
-/// integrity checking.
-#[derive(Debug)]
-pub struct Header {
-    /// Magic number signaling the start of a new frame.
-    pub preamble: u32,
-    /// Protocol version encoded as `MMMMmmmm` (4 bits Major, 4 bits Minor).
-    pub version: u8,
-    /// Bitmask controlling protocol behavior and frame structure.
-    pub flags: u8,
-    /// Unique identifier of the source navigation node.
-    pub device_id: u8,
-    /// Identifier defining the structure and semantics of the payload data.
-    pub payload_type: u8,
-    /// Monotonically increasing value used for detecting
-    /// lost packets & preventing replay attacks.
-    pub sequence: u16,
-    /// Size of the payload section in bytes.
-    pub payload_len: u16,
-    /// Cyclic Redundancy Check for header integrity.
-    pub crc: u16,
+/// Size of INDTP header in bytes.
+pub const HEADER_SIZE: usize = size_of::<Header>();
+
+indtp_data! {
+    /// Contains all necessary metadata for routing, versioning, and initial
+    /// integrity checking.
+    pub struct Header {
+        /// Magic number signaling the start of a new frame.
+        pub preamble: u32,
+        /// Protocol version encoded as `MMMMmmmm` (4 bits Major, 4 bits Minor).
+        pub version: u8,
+        /// Bitmask controlling protocol behavior and frame structure.
+        pub flags: u8,
+        /// Unique identifier of the source navigation node.
+        pub device_id: u8,
+        /// Identifier defining the structure and semantics of the payload data.
+        pub payload_type: u8,
+        /// Monotonically increasing value used for detecting
+        /// lost packets & preventing replay attacks.
+        pub sequence: u16,
+        /// Size of the payload section in bytes.
+        pub payload_len: u16,
+        /// Cyclic Redundancy Check for header integrity.
+        pub crc: u16,
+    }
 }
 
 impl Header {

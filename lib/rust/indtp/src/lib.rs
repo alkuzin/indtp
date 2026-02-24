@@ -27,9 +27,15 @@
     missing_docs
 )]
 
-pub mod types;
+#[macro_use]
+pub mod macros;
+mod types;
 mod header;
 mod utils;
 
 pub use header::*;
 pub use types::{Error, Result};
+
+pub(crate) mod prelude {
+    pub use zerocopy::{IntoBytes, FromBytes, Immutable, KnownLayout};
+}
