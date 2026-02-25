@@ -4,9 +4,9 @@
 //! INDTP header related declarations.
 
 use core::ops::Range;
+use bitflags::bitflags;
 use zerocopy::little_endian::{U16, U32};
 use crate::{
-    utils::{change_bit, test_bit, create_mask, get_bit_field, set_bit_field},
     prelude::*, integrity::IntegrityChecker, types::Packable, indtp_data,
 };
 
@@ -58,33 +58,14 @@ pub enum Mode {
 }
 
 impl From<Mode> for u8 {
-    /// Convert protocol operating mode to u8.
-    ///
-    /// # Parameters
-    /// - `mode` - given protocol operating mode to convert.
-    ///
-    /// # Returns
-    /// - Protocol operating mode in u8 representation.
     fn from(mode: Mode) -> Self {
         mode as Self
     }
 }
 
 impl TryFrom<u8> for Mode {
-    /// The type returned in the event of a conversion error.
     type Error = Error;
 
-    /// Try to convert byte to IDTP mode.
-    ///
-    /// # Parameters
-    /// - `byte` - given byte to convert.
-    ///
-    /// # Returns
-    /// - IDTP mode from byte - in case of success.
-    /// - Error otherwise.
-    ///
-    /// # Errors
-    /// - Parse Error.
     fn try_from(value: u8) -> Result<Self> {
         match value {
             0x00 => Ok(Self::Lite),
@@ -96,25 +77,74 @@ impl TryFrom<u8> for Mode {
     }
 }
 
-/// Batching flag:
-/// - `0`: Single sample mode. Payload contains one data record with
-/// an absolute timestamp;
-/// - `1`: Batch mode. Payload section starts with count `N`, followed by
-/// `N` records with relative timestamps.
-const FLAG_BATCH: u8 = 3;
+impl From<Mode> for Flags {
+    fn from(mode: Mode) -> Self {
+        match mode {
+            Mode::Lite => Flags::MODE_LITE,
+            Mode::Verified => Flags::MODE_VERIFIED,
+            Mode::Trusted => Flags::MODE_TRUSTED,
+            Mode::Critical => Flags::MODE_CRITICAL,
+        }
+    }
+}
 
-/// Payload encryption flag:
-/// - `0`: Payload is not encrypted;
-/// - `1`: Payload is encrypted using `AES-128-CTR`.
-const FLAG_ENCRYPT: u8 = 4;
+impl TryFrom<Flags> for Mode {
+    type Error = Error;
 
-/// Frame handling priority flag:
-/// - `0`: Low priority.
-/// - `1`: High priority.
-const FLAG_PRIORITY: u8 = 5;
+    fn try_from(flags: Flags) -> Result<Self> {
+        let mode_bits = flags & Flags::MODE_MASK;
 
-/// Payload mode bit mask.
-const MODE_MASK: u8 = create_mask(2, 0);
+        match mode_bits {
+            Flags::MODE_LITE => Ok(Mode::Lite),
+            Flags::MODE_VERIFIED => Ok(Mode::Verified),
+            Flags::MODE_TRUSTED => Ok(Mode::Trusted),
+            Flags::MODE_CRITICAL => Ok(Mode::Critical),
+            _ => Err(Error::ParseError),
+        }
+    }
+}
+
+bitflags! {
+    /// Protocol flags type-safe wrapper.
+    #[derive(PartialEq, Eq)]
+    pub struct Flags: u8 {
+        /// Mode for minimum latency and overhead for trusted internal channels.
+        const MODE_LITE = 0b0000_0000;
+
+        /// Robust data transmission in noisy environments with protection against
+        /// accidental corruption.
+        const MODE_VERIFIED = 0b0000_0001;
+
+        /// Balanced security for unsecured wireless channels.
+        /// Provides protection against data spoofing and replay attacks with
+        /// minimal overhead.
+        const MODE_TRUSTED = 0b0000_0010;
+
+        /// Maximum security for critical commands, firmware updates, or
+        /// configuration changes where bandwidth is secondary to trust.
+        const MODE_CRITICAL = 0b0000_0011;
+
+        /// Payload mode bit mask.
+        const MODE_MASK = 0b0000_0011;
+
+        /// Batching flag:
+        /// - `0`: Single sample mode. Payload contains one data record with
+        /// an absolute timestamp;
+        /// - `1`: Batch mode. Payload section starts with count `N`, followed by
+        /// `N` records with relative timestamps.
+        const BATCH = 1 << 2;
+
+        /// Payload encryption flag:
+        /// - `0`: Payload is not encrypted;
+        /// - `1`: Payload is encrypted using `AES-128-CTR`.
+        const ENCRYPT = 1 << 3;
+
+        /// Frame handling priority flag:
+        /// - `0`: Low priority.
+        /// - `1`: High priority.
+        const PRIORITY = 1 << 4;
+    }
+}
 
 /// Protocol version encoded as `MMMMmmmm` (4 bits Major, 4 bits Minor).
 pub const INDTP_VERSION: u8 = 0x10;
@@ -172,13 +202,34 @@ impl Header {
         }
     }
 
+    /// Get protocol flags.
+    ///
+    /// # Returns
+    /// - Protocol flags type-safe wrapper.
+    #[inline]
+    pub fn get_flags(&self) -> Flags {
+        Flags::from_bits_truncate(self.flags)
+    }
+
+    /// Set flags from a type-safe bitflags struct.
+    /// Set protocol flags.
+    ///
+    /// # Parameters
+    /// - `flags` - given protocol flags type-safe wrapper to handle.
+    #[inline]
+    pub fn set_flags(&mut self, flags: Flags) {
+        self.flags = flags.bits();
+    }
+
     /// Set protocol operating mode.
     ///
     /// # Parameters
     /// - `mode` - given protocol operating mode to set.
     pub fn set_mode(&mut self, mode: Mode) {
-        let mode = u8::from(mode);
-        set_bit_field(&mut self.flags, MODE_MASK, mode);
+        let mut flags = self.get_flags();
+        flags.remove(Flags::MODE_MASK);
+        flags.insert(mode.into());
+        self.flags = flags.bits();
     }
 
     /// Get protocol operating mode.
@@ -190,8 +241,8 @@ impl Header {
     /// # Errors
     /// - Parse error.
     pub fn mode(&self) -> Result<Mode> {
-        let mode = get_bit_field(self.flags, MODE_MASK);
-        Mode::try_from(mode)
+        let flags = self.get_flags();
+        Mode::try_from(flags)
     }
 
     /// Check whether data aggregation is enabled or not for payload.
@@ -200,7 +251,8 @@ impl Header {
     /// - `true` - if batch mode is enabled.
     /// - `false` - if single sample mode is enabled.
     pub fn is_batch(&self) -> bool {
-        test_bit(self.flags, FLAG_BATCH)
+        let flags = self.get_flags();
+        flags.contains(Flags::BATCH)
     }
 
     /// Enable/disable data aggregation for payload.
@@ -208,7 +260,9 @@ impl Header {
     /// # Parameters
     /// - `enabled` - given flag to handle.
     pub fn set_batch(&mut self, enabled: bool) {
-        change_bit(&mut self.flags, FLAG_BATCH, enabled);
+        let mut flags = self.get_flags();
+        flags.set(Flags::BATCH, enabled);
+        self.flags = flags.bits();
     }
 
     /// Check whether payload is encrypted or not.
@@ -217,7 +271,8 @@ impl Header {
     /// - `true` - if payload is encrypted.
     /// - `false` - if payload is plaintext.
     pub fn is_encrypted(&self) -> bool {
-        test_bit(self.flags, FLAG_ENCRYPT)
+        let flags = self.get_flags();
+        flags.contains(Flags::ENCRYPT)
     }
 
     /// Set/unset payload encryption flag.
@@ -225,7 +280,9 @@ impl Header {
     /// # Parameters
     /// - `enabled` - given flag to handle.
     pub fn set_encrypted(&mut self, enabled: bool) {
-        change_bit(&mut self.flags, FLAG_ENCRYPT, enabled);
+        let mut flags = self.get_flags();
+        flags.set(Flags::ENCRYPT, enabled);
+        self.flags = flags.bits();
     }
 
     /// Check whether frame handling has high priority.
@@ -234,7 +291,8 @@ impl Header {
     /// - `true` - if frame handling has high priority.
     /// - `false` - if frame handling has low priority.
     pub fn is_high_priority(&self) -> bool {
-        test_bit(self.flags, FLAG_PRIORITY)
+        let flags = self.get_flags();
+        flags.contains(Flags::PRIORITY)
     }
 
     /// Set frame handling priority.
@@ -242,7 +300,9 @@ impl Header {
     /// # Parameters
     /// - `high` - given flag to handle.
     pub fn set_priority(&mut self, high: bool) {
-        change_bit(&mut self.flags, FLAG_PRIORITY, high);
+        let mut flags = self.get_flags();
+        flags.set(Flags::PRIORITY, high);
+        self.flags = flags.bits();
     }
 
     /// Check whether payload is standard or not.
