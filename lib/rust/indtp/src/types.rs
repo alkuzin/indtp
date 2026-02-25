@@ -7,7 +7,7 @@ use core::{error, result, fmt::{Display, Formatter}};
 use crate::prelude::*;
 
 /// Protocol errors enumeration.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     /// Error to convert from/to bytes.
     ParseError,
@@ -15,6 +15,8 @@ pub enum Error {
     BufferUnderflow,
     /// Buffer too large.
     BufferOverflow,
+    /// Incorrect Cyclic Redundancy Check.
+    IncorrectCrc,
 }
 
 impl Display for Error {

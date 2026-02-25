@@ -4,7 +4,7 @@
 # Project package info section.
 [package]
 name        = "indtp"
-version     = "0.1.0"
+version     = "0.2.0"
 description = "Inertial Navigation Data Transfer Protocol (INDTP)"
 authors     = ["Alexander <alkuzindev@gmail.com>"]
 repository  = "https://github.com/alkuzin/indtp"
@@ -15,8 +15,18 @@ edition     = "2024"
 [dependencies]
 # Zerocopy makes zero-cost memory manipulation effortless.
 zerocopy = { version = "0.8", features = ["derive"] }
+# Generate types for C-style flags with ergonomic APIs.
+bitflags = "2.11.0"
+# Rust implementation of CRC.
+crc = { version = "3.4.0", optional = true }
+# Generic implementation of Hash-based Message Authentication Code (HMAC).
+hmac = { version = "0.12.1", optional = true }
+# An implementation of the SHA-2 cryptographic hash algorithms.
+sha2 = { version = "0.10.9", optional = true, default-features = false }
 
 # Project features section.
 [features]
 # Features that used by default.
-default = []
+default = ["software_impl"] # TODO: remove
+# Feature to enable software-based calculation for CRC & HMAC.
+software_impl = ["dep:crc", "dep:hmac", "dep:sha2"]

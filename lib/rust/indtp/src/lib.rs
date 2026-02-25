@@ -32,6 +32,7 @@ pub mod macros;
 mod types;
 mod header;
 mod utils;
+mod integrity;
 
 pub use header::*;
 pub use types::{Error, Result};
@@ -39,4 +40,5 @@ pub use types::{Error, Result};
 pub(crate) mod prelude {
     pub use zerocopy::{IntoBytes, FromBytes, Immutable, KnownLayout};
     pub use crate::{Error, Result};
+    pub use crate::integrity::IntegrityEngine;
 }
