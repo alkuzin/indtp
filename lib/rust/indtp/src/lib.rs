@@ -31,7 +31,6 @@
 pub mod macros;
 mod types;
 mod header;
-mod utils;
 mod integrity;
 
 pub use header::*;
