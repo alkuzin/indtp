@@ -4,7 +4,7 @@
 # Project package info section.
 [package]
 name        = "indtp"
-version     = "0.3.0"
+version     = "0.4.0"
 description = "Inertial Navigation Data Transfer Protocol (INDTP)"
 authors     = ["Alexander <alkuzindev@gmail.com>"]
 repository  = "https://github.com/alkuzin/indtp"
