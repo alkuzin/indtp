@@ -146,6 +146,98 @@ bitflags! {
     }
 }
 
+impl Flags {
+    /// Create an empty set of flags.
+    ///
+    /// # Returns
+    /// - New empty set of flags.
+    #[inline]
+    pub const fn new() -> Self {
+        Self::empty()
+    }
+
+    /// Set the protocol operating mode.
+    ///
+    /// # Parameters
+    /// - `mode` - given protocol operating mode to set.
+    ///
+    /// # Returns
+    /// - Updated set of flags.
+    #[inline]
+    pub fn with_mode(mut self, mode: Mode) -> Self {
+        let flag = match mode {
+            Mode::Lite => Self::MODE_LITE,
+            Mode::Verified => Self::MODE_VERIFIED,
+            Mode::Trusted => Self::MODE_TRUSTED,
+            Mode::Critical => Self::MODE_CRITICAL,
+        };
+
+        self.remove(Self::MODE_MASK);
+        self.insert(flag);
+        self
+    }
+
+    /// Enable or disable the `BATCH` flag.
+    ///
+    /// # Parameters
+    /// - `enabled` - given flag to handle.
+    ///
+    /// # Returns
+    /// - Updated set of flags.
+    #[inline]
+    pub fn with_batch(mut self, enabled: bool) -> Self {
+        if enabled {
+            self.insert(Self::BATCH);
+        } else {
+            self.remove(Self::BATCH);
+        }
+        self
+    }
+
+    /// Enable or disable the `ENCRYPT` flag.
+    ///
+    /// # Parameters
+    /// - `enabled` - given flag to handle.
+    ///
+    /// # Returns
+    /// - Updated set of flags.
+    #[inline]
+    pub fn with_encryption(mut self, enabled: bool) -> Self {
+        if enabled {
+            self.insert(Self::ENCRYPT);
+        } else {
+            self.remove(Self::ENCRYPT);
+        }
+        self
+    }
+
+    /// Enable or disable the `PRIORITY` flag.
+    ///
+    /// # Parameters
+    /// - `enabled` - given flag to handle.
+    ///
+    /// # Returns
+    /// - Updated set of flags.
+    #[inline]
+    pub fn with_priority(mut self, enabled: bool) -> Self {
+        if enabled {
+            self.insert(Self::PRIORITY);
+        } else {
+            self.remove(Self::PRIORITY);
+        }
+        self
+    }
+
+    /// Finalize the build.
+    ///
+    /// # Returns
+    /// - Updated set of flags.
+    #[inline]
+    pub const fn build(self) -> Self {
+        self
+    }
+}
+
 /// Protocol version encoded as `MMMMmmmm` (4 bits Major, 4 bits Minor).
 pub const INDTP_VERSION: u8 = 0x10;
 
