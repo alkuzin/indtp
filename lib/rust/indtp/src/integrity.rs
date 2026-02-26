@@ -3,11 +3,11 @@
 
 //! Integrity checking engine related declarations.
 
-#[cfg(feature = "software_impl")]
+#[cfg(feature = "sw_integrity")]
 use crc::{Crc, CRC_16_MCRF4XX, CRC_32_AUTOSAR};
 
-/// Trait for both software & hardware-assisted integrity checking.
-pub trait IntegrityChecker {
+/// Trait for both software & hardware-assisted integrity checking engine.
+pub trait IntegrityEngine: Default {
     /// Calculating `CRC-16` for given data.
     ///
     /// # Parameters
@@ -15,7 +15,11 @@ pub trait IntegrityChecker {
     ///
     /// # Returns
     /// - `CRC-16` value in **Little-Endian** byte order.
-    fn compute_crc16(data: &[u8]) -> u16;
+    fn compute_crc16(_data: &[u8]) -> u16 {
+        unimplemented!(
+            "Missing CRC-16 implementation for this integrity checking engine."
+        );
+    }
 
     /// Calculating `CRC-32` for given data.
     ///
@@ -24,14 +28,20 @@ pub trait IntegrityChecker {
     ///
     /// # Returns
     /// - `CRC-32` value in **Little-Endian** byte order.
-    fn compute_crc32(data: &[u8]) -> u32;
+    fn compute_crc32(_data: &[u8]) -> u32 {
+        unimplemented!(
+            "Missing CRC-32 implementation for this integrity checking engine."
+        );
+    }
 }
 
-#[cfg(feature = "software_impl")]
-pub struct SoftwareIntegrity;
+#[cfg(feature = "sw_integrity")]
+/// Software implementation of integrity checking engine.
+#[derive(Default)]
+pub struct SwIntegrityEngine;
 
-#[cfg(feature = "software_impl")]
-impl IntegrityChecker for SoftwareIntegrity {
+#[cfg(feature = "sw_integrity")]
+impl IntegrityEngine for SwIntegrityEngine {
     fn compute_crc16(data: &[u8]) -> u16 {
         Crc::<u16>::new(&CRC_16_MCRF4XX).checksum(data)
     }
@@ -40,6 +50,3 @@ impl IntegrityChecker for SoftwareIntegrity {
         Crc::<u32>::new(&CRC_32_AUTOSAR).checksum(data)
     }
 }
-
-#[cfg(feature = "software_impl")]
-pub type IntegrityEngine = SoftwareIntegrity;
