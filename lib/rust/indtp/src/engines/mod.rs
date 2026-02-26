@@ -92,7 +92,7 @@ pub trait CryptographyEngine: Default {
     ///
     /// # Parameters
     /// - `key` - given AES key.
-    /// - `nonce`: given initialization vector (12 bytes).
+    /// - `nonce`: given initialization vector;
     /// - `data` - given data to encrypt/decrypt.
     ///
     /// # Returns
@@ -103,7 +103,7 @@ pub trait CryptographyEngine: Default {
     /// - Cryptographic errors.
     fn compute_aes_ctr(
         _key: &AesKey,
-        _nonce: &[u8],
+        _nonce: &[u8; 16],
         _data: &mut [u8],
     ) -> Result<()> {
         unimplemented!(

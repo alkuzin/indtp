@@ -59,13 +59,9 @@ impl CryptographyEngine for SwCryptoEngine {
 
     fn compute_aes_ctr(
         key: &AesKey,
-        nonce: &[u8],
+        nonce: &[u8; 16],
         data: &mut [u8],
     ) -> Result<()> {
-        if nonce.len() != 12 {
-            return Err(Error::CryptoError);
-        }
-
         let mut cipher =
             Ctr128BE::<Aes128>::new_from_slices(key.as_ref(), nonce)
                 .map_err(|_| Error::CryptoError)?;
