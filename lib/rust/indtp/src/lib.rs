@@ -33,6 +33,7 @@ mod types;
 mod header;
 mod frame;
 mod engines;
+mod payload;
 
 pub use header::*;
 pub use frame::*;
@@ -46,4 +47,5 @@ pub(crate) mod prelude {
     pub use crate::engines::{
         SwIntegrityEngine, SwCryptoEngine, IntegrityEngine, CryptographyEngine
     };
+    pub use crate::payload::*;
 }

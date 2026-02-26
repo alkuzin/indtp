@@ -10,17 +10,10 @@ pub use flags::*;
 pub use mode::*;
 
 use zerocopy::little_endian::{U16, U32};
-use core::ops::Range;
 use crate::prelude::*;
 
 /// Protocol version encoded as `MMMMmmmm` (4 bits Major, 4 bits Minor).
 pub const INDTP_VERSION: u8 = 0x10;
-
-/// Standard payload type range.
-pub const STANDARD_PAYLOAD_RANGE: Range<u8> = 0x00..0x7F + 1;
-
-/// Vendor-specific payload type range.
-pub const VENDOR_PAYLOAD_RANGE: Range<u8> = 0x80..0xFF;
 
 /// Size of INDTP header in bytes.
 pub const HEADER_SIZE: usize = 14;
