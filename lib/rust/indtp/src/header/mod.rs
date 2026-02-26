@@ -74,9 +74,13 @@ impl Header {
     /// Calculating `CRC-16` for header.
     ///
     /// # Returns
-    /// - `CRC-16` value in **Little-Endian** byte order.
+    /// - `CRC-16` value in **Little-Endian** byte order in case of success.
+    /// - `Err` - otherwise.
+    /// 
+    /// # Errors
+    /// - Parse errors.
     #[inline]
-    fn compute_crc<I: IntegrityEngine>(&self) -> Result<u16> {
+    pub fn compute_crc<I: IntegrityEngine>(&self) -> Result<u16> {
         let data = &self.as_bytes()
             .get(0..Self::CRC_OFFSET)
             .ok_or(Error::ParseError)?;
