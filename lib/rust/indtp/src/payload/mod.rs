@@ -8,6 +8,7 @@ mod std;
 
 use core::ops::Range;
 #[cfg(feature = "std_payloads")]
+#[allow(unused)]
 pub use std::*;
 
 use crate::prelude::*;
@@ -15,6 +16,7 @@ use crate::prelude::*;
 /// Standard payload type range.
 pub const STANDARD_PAYLOAD_RANGE: Range<u8> = 0x00..0x7F + 1;
 
+#[allow(unused)]
 /// Vendor-specific payload type range.
 pub const VENDOR_PAYLOAD_RANGE: Range<u8> = 0x80..0xFF;
 
@@ -40,6 +42,7 @@ pub trait AsMetricsArray<const N: usize> {
     ///
     /// # Returns
     /// - Fixed-size array of payload members.
+    #[allow(unused)]
     fn to_array(&self) -> [f32; N];
 }
 

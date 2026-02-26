@@ -54,6 +54,7 @@ impl Header {
     ///
     /// # Returns
     /// - New INDTP header.
+    #[inline]
     pub fn new() -> Self {
         Self {
             preamble: U32::new(Self::PREAMBLE),
@@ -67,6 +68,7 @@ impl Header {
     /// # Returns
     /// - `true` - if payload type is standard.
     /// - `false` - if payload type is vendor-specific.
+    #[inline]
     pub fn is_standard_payload(&self) -> bool {
         STANDARD_PAYLOAD_RANGE.contains(&(self.payload_type))
     }
@@ -85,7 +87,7 @@ impl Header {
             .get(0..Self::CRC_OFFSET)
             .ok_or(Error::ParseError)?;
 
-        Ok(I::compute_crc16(&data))
+        Ok(I::compute_crc16(data))
     }
 
     /// Pack header into raw bytes.
@@ -98,6 +100,7 @@ impl Header {
     /// - Buffer underflow.
     /// - Parse errors.
     /// - Incorrect CRC.
+    #[inline]
     pub fn pack<I: IntegrityEngine>(&self) -> Result<[u8; HEADER_SIZE]> {
         let mut buffer = [0u8; HEADER_SIZE];
         self.pack_into::<I>(&mut buffer)?;
@@ -126,7 +129,7 @@ impl Header {
         buffer
             .get_mut(0..HEADER_SIZE)
             .ok_or(Error::ParseError)?
-            .copy_from_slice(&self.as_bytes());
+            .copy_from_slice(self.as_bytes());
 
         let crc = self.compute_crc::<I>()?;
 
@@ -174,7 +177,7 @@ impl Header {
             .get(0..Self::CRC_OFFSET)
             .ok_or(Error::ParseError)?;
 
-        let computed_crc = I::compute_crc16(&data);
+        let computed_crc = I::compute_crc16(data);
 
         let crc_bytes: &[u8; 2] = buffer
             .get(12..14)

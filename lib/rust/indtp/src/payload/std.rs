@@ -3,6 +3,7 @@
 
 //! INDTP frame standard payload types.
 
+#![allow(unused)]
 use crate::prelude::*;
 
 indtp_data! {

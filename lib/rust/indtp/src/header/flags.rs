@@ -8,7 +8,7 @@ use crate::Mode;
 
 bitflags! {
     /// Protocol flags type-safe wrapper.
-    #[derive(PartialEq, Eq, Clone, Copy)]
+    #[derive(PartialEq, Eq, Clone, Copy, Default)]
     pub struct Flags: u8 {
         /// Mode for minimum latency and overhead for trusted internal channels.
         const MODE_LITE = 0b0000_0000;

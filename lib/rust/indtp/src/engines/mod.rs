@@ -6,6 +6,7 @@
 #[cfg(any(feature = "sw_integrity", feature = "sw_crypto"))]
 mod sw;
 #[cfg(any(feature = "sw_integrity", feature = "sw_crypto"))]
+#[allow(unused)]
 pub use sw::{SwIntegrityEngine, SwCryptoEngine};
 
 use crate::prelude::*;

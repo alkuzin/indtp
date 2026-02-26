@@ -16,7 +16,7 @@
 //! exchange under diverse operational conditions.
 
 #![no_std]
-#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+#![warn(clippy::all, clippy::correctness, clippy::suspicious)]
 #![deny(
     clippy::unwrap_used,
     clippy::expect_used,
@@ -44,8 +44,6 @@ pub(crate) mod prelude {
     pub use crate::{Error, Result};
     pub use crate::header::*;
     pub use crate::types::*;
-    pub use crate::engines::{
-        SwIntegrityEngine, SwCryptoEngine, IntegrityEngine, CryptographyEngine
-    };
+    pub use crate::engines::*;
     pub use crate::payload::*;
 }

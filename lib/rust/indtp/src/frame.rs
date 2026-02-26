@@ -50,6 +50,7 @@ impl<'a> Frame<'a> {
     /// - Buffer underflow.
     /// - Buffer overflow.
     /// - Parse errors.
+    #[allow(unused)]
     #[inline]
     fn new_lite(
         buffer: &'a mut [u8],
@@ -77,6 +78,7 @@ impl<'a> Frame<'a> {
     /// - Buffer underflow.
     /// - Buffer overflow.
     /// - Parse errors.
+    #[allow(unused)]
     #[inline]
     fn new_verified(
         buffer: &'a mut [u8],
@@ -104,6 +106,7 @@ impl<'a> Frame<'a> {
     /// - Buffer underflow.
     /// - Buffer overflow.
     /// - Parse errors.
+    #[allow(unused)]
     #[inline]
     fn new_trusted(
         buffer: &'a mut [u8],
@@ -131,6 +134,7 @@ impl<'a> Frame<'a> {
     /// - Buffer underflow.
     /// - Buffer overflow.
     /// - Parse errors.
+    #[allow(unused)]
     #[inline]
     fn new_critical(
         buffer: &'a mut [u8],
@@ -331,46 +335,73 @@ impl<'a> Frame<'a> {
     ///
     /// # Returns
     /// - Reference to payload byte slice.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse errors.
     #[inline]
-    pub fn payload(&self) -> &[u8] {
+    pub fn payload(&self) -> Result<&[u8]> {
         let begin = HEADER_SIZE;
-        &self.buffer[begin..begin + self.payload_len]
+        let data = self.buffer.get(begin..begin + self.payload_len)
+            .ok_or(Error::ParseError)?;
+        Ok(data)
     }
 
     /// Get mutable payload reference.
     ///
     /// # Returns
     /// - Mutable reference to payload byte slice.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse errors.
     #[inline]
-    pub fn payload_mut(&mut self) -> &mut [u8] {
+    pub fn payload_mut(&mut self) -> Result<&mut [u8]> {
         let begin = HEADER_SIZE;
-        &mut self.buffer[begin..begin + self.payload_len]
+        let data = self.buffer.get_mut(begin..begin + self.payload_len)
+            .ok_or(Error::ParseError)?;
+        Ok(data)
     }
 
     /// Get frame trailer reference.
     ///
     /// # Returns
     /// - Reference to frame trailer byte slice.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse errors.
     #[inline]
-    pub fn trailer(&self) -> &[u8] {
+    pub fn trailer(&self) -> Result<&[u8]> {
         let begin = HEADER_SIZE + self.payload_len;
-        &self.buffer[begin..begin + self.trailer_len]
+        let data = self.buffer.get(begin..begin + self.trailer_len)
+            .ok_or(Error::ParseError)?;
+        Ok(data)
     }
 
     /// Get mutable frame trailer reference.
     ///
     /// # Returns
-    /// - Mutable reference to frame trailer byte slice.
+    /// - Mutable reference to frame trailer byte slice - in case of success.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse errors.
     #[inline]
-    pub fn trailer_mut(&mut self) -> &mut [u8] {
+    pub fn trailer_mut(&mut self) -> Result<&mut [u8]> {
         let begin = HEADER_SIZE + self.payload_len;
-        &mut self.buffer[begin..begin + self.trailer_len]
+        let data = self.buffer
+            .get_mut(begin..begin + self.trailer_len)
+            .ok_or(Error::ParseError)?;
+
+        Ok(data)
     }
 
     /// Get frame payload length.
     ///
     /// # Returns
     /// - Payload length in bytes.
+    #[allow(unused)]
     #[inline]
     fn payload_len(&self) -> usize {
         self.payload_len
@@ -380,6 +411,7 @@ impl<'a> Frame<'a> {
     ///
     /// # Returns
     /// - Trailer length in bytes.
+    #[allow(unused)]
     #[inline]
     fn trailer_len(&self) -> usize {
         self.trailer_len
@@ -421,7 +453,7 @@ impl<'a> Frame<'a> {
             return Err(Error::BufferOverflow);
         }
 
-        self.payload_mut().copy_from_slice(bytes);
+        self.payload_mut()?.copy_from_slice(bytes);
 
         #[allow(clippy::cast_possible_truncation)]
         {
@@ -451,7 +483,7 @@ impl<'a> Frame<'a> {
             return Err(Error::BufferOverflow);
         }
 
-        self.payload_mut().copy_from_slice(payload.to_bytes());
+        self.payload_mut()?.copy_from_slice(payload.to_bytes());
         #[allow(clippy::cast_possible_truncation)]
         {
             self.header_mut().payload_type = T::payload_type();
@@ -466,10 +498,16 @@ impl<'a> Frame<'a> {
     ///
     /// # Returns
     /// - Byte slice of the frame containing the header and payload.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse errors.
     #[inline]
-    pub fn authenticated_data(&self) -> &[u8] {
+    pub fn authenticated_data(&self) -> Result<&[u8]> {
         let end = HEADER_SIZE + self.payload_len;
-        &self.buffer[0..end]
+        let data = self.buffer.get(0..end)
+            .ok_or(Error::ParseError)?;
+        Ok(data)
     }
 
     /// Write frame trailer.
@@ -489,26 +527,26 @@ impl<'a> Frame<'a> {
         I: IntegrityEngine,
         C: CryptographyEngine,
     {
-        let auth_data = self.authenticated_data();
+        let auth_data = self.authenticated_data()?;
         let mode = self.mode()?;
 
         match mode {
             Mode::Lite => {},
             Mode::Verified => {
                 let crc32 = I::compute_crc32(auth_data);
-                self.trailer_mut().copy_from_slice(&crc32.to_le_bytes());
+                self.trailer_mut()?.copy_from_slice(&crc32.to_le_bytes());
             },
             Mode::Trusted => {
                 let k = keys.ok_or(Error::MissingKeys)?;
                 let mut mac = [0u8; 8];
                 C::compute_cmac(&k.aes_key, auth_data, &mut mac)?;
-                self.trailer_mut().copy_from_slice(&mac);
+                self.trailer_mut()?.copy_from_slice(&mac);
             },
             Mode::Critical => {
                 let k = keys.ok_or(Error::MissingKeys)?;
                 let mut mac = [0u8; 32];
                 C::compute_hmac(&k.hmac_key, auth_data, &mut mac)?;
-                self.trailer_mut().copy_from_slice(&mac);
+                self.trailer_mut()?.copy_from_slice(&mac);
             },
         }
 
@@ -535,14 +573,16 @@ impl<'a> Frame<'a> {
         I: IntegrityEngine,
         C: CryptographyEngine,
     {
-        let auth_data = self.authenticated_data();
-        let trailer_bytes = self.trailer();
+        let auth_data = self.authenticated_data()?;
+        let trailer_bytes = self.trailer()?;
         let mode = self.mode()?;
 
         match mode {
             Mode::Lite => {},
             Mode::Verified => {
-                let trailer: [u8; 4] = trailer_bytes[0..4]
+                let trailer: [u8; 4] = trailer_bytes
+                    .get(0..4)
+                    .ok_or(Error::ParseError)?
                     .try_into()
                     .map_err(|_| Error::ParseError)?;
 
@@ -560,7 +600,7 @@ impl<'a> Frame<'a> {
 
                 C::compute_cmac(&k.aes_key, auth_data, &mut computed_mac)?;
 
-                if received_mac != &computed_mac {
+                if received_mac != computed_mac {
                     return Err(Error::AuthFailed);
                 }
             },
@@ -571,7 +611,7 @@ impl<'a> Frame<'a> {
 
                 C::compute_hmac(&k.hmac_key, auth_data, &mut computed_mac)?;
 
-                if received_mac != &computed_mac {
+                if received_mac != computed_mac {
                     return Err(Error::AuthFailed);
                 }
             },
@@ -783,7 +823,7 @@ mod tests {
             .expect("Parsing valid frame failed");
 
         assert_eq!(frame.mode().unwrap(), Mode::Lite);
-        assert_eq!(frame.payload(), &payload_data);
+        assert_eq!(frame.payload().unwrap(), &payload_data);
         assert_eq!(frame.payload_len(), 4);
         assert_eq!(frame.trailer_len(), 0);
     }

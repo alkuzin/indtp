@@ -27,9 +27,12 @@ impl CryptographyEngine for SwCryptoEngine {
             .map_err(|_| Error::CryptoError)?;
 
         mac.update(data);
-        let result = mac.finalize().into_bytes();
 
-        out.copy_from_slice(&result[0..8]);
+        let result = mac.finalize().into_bytes();
+        let result = result.get(0..8)
+            .ok_or(Error::ParseError)?;
+
+        out.copy_from_slice(result);
         Ok(())
     }
 
