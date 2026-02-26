@@ -21,6 +21,8 @@ pub enum Error {
     MissingKeys,
     /// Authentication failed.
     AuthFailed,
+    /// Cryptographic error.
+    CryptoError,
 }
 
 impl Display for Error {
