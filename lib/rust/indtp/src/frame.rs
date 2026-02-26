@@ -713,11 +713,11 @@ impl<'a> Frame<'a> {
     }
 
     /// Start data aggregation.
-    /// 
+    ///
     /// # Returns
     /// - Active batch record context - in case of success.
     /// - `Err` - otherwise.
-    /// 
+    ///
     /// # Errors
     /// - Invalid operation.
     /// - Buffer overflow.
@@ -775,7 +775,63 @@ impl<'a> Frame<'a> {
         Ok(())
     }
 
-    // TODO: handle payload encryption.
+    /// Encrypt payload. Only if `ENCRYPT` flag is set.
+    ///
+    /// # Parameters
+    /// - `keys` - given cryptographic keys to handle.
+    ///
+    /// # Returns
+    /// - `Ok` - in case of success.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Cryptographic errors.
+    /// - Parse errors.
+    /// - Invalid operation.
+    pub fn encrypt<C>(&mut self, keys: &CryptoKeys) -> Result<()>
+    where
+        C: CryptographyEngine,
+    {
+        if !self.is_encrypted() {
+            return Err(Error::InvalidOperation);
+        }
+
+        let header = self.header();
+        let sequence_bytes = header.sequence.to_bytes();
+
+        // Nonce structure:
+        // nonce = [device ID (1 byte)] | [sequence number (2 bytes)] |
+        // [padding (zeros) up to 16 bytes]
+        let mut nonce = [0u8; 16];
+        nonce[0] = header.device_id;
+        nonce[1] = sequence_bytes[0];
+        nonce[2] = sequence_bytes[1];
+
+        C::compute_aes_ctr(&keys.aes_key, &nonce, self.payload_mut()?)?;
+        Ok(())
+    }
+
+    /// Decrypt payload. Only if `ENCRYPT` flag is set.
+    ///
+    /// # Parameters
+    /// - `keys` - given cryptographic keys to handle.
+    ///
+    /// # Returns
+    /// - `Ok` - in case of success.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Cryptographic errors.
+    /// - Parse errors.
+    /// - Invalid operation.
+    #[inline]
+    pub fn decrypt<C>(&mut self, keys: &CryptoKeys) -> Result<()>
+    where
+        C: CryptographyEngine,
+    {
+        self.encrypt::<C>(keys)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -1052,5 +1108,73 @@ mod tests {
         let err = frame.push_single_sample(12345, &[0x01, 0x02]).unwrap_err();
         assert!(matches!(err, Error::BufferOverflow));
         assert_eq!(frame.payload().unwrap()[0], 0);
+    }
+
+    fn setup_frame_for_encryption_tests(
+        buffer: &mut [u8],
+        encryption: bool,
+        payload_len: usize
+    ) -> Frame<'_> {
+        Frame::new(
+            buffer,
+            0xAB,
+            0x00,
+            payload_len,
+            Flags::new()
+                .with_mode(Mode::Critical)
+                .with_encryption(encryption)
+                .build(),
+        ).unwrap()
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_roundtrip() {
+        let mut buffer = [0u8; 64];
+        let original_data = [0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE];
+        let mut frame = setup_frame_for_encryption_tests(&mut buffer, true, original_data.len());
+
+        let keys = CryptoKeys::new([0x42; 16], [0x42; 32]);
+        frame.set_payload_raw(&original_data, 0x7F).unwrap();
+        frame.encrypt::<SwCryptoEngine>(&keys).unwrap();
+
+        let encrypted_payload = frame.payload().unwrap();
+        assert_ne!(encrypted_payload, original_data);
+
+        frame.decrypt::<SwCryptoEngine>(&keys).unwrap();
+        let decrypted_payload = frame.payload().unwrap();
+
+        assert_eq!(decrypted_payload, original_data);
+    }
+
+    #[test]
+    fn test_encrypt_without_flag_fails() {
+        let mut buffer = [0u8; 64];
+        let mut frame = setup_frame_for_encryption_tests(&mut buffer, false, 8);
+        let keys = CryptoKeys::new([0x42; 16], [0x42; 32]);
+        let res = frame.encrypt::<SwCryptoEngine>(&keys);
+
+        assert!(matches!(res, Err(Error::InvalidOperation)));
+    }
+
+    #[test]
+    fn test_nonce_changes_with_sequence() {
+        let mut buffer1 = [0u8; 64];
+        let mut buffer2 = [0u8; 64];
+        let data = [0x55; 16];
+
+        let mut frame1 = setup_frame_for_encryption_tests(&mut buffer1, true, data.len());
+        frame1.payload_mut().unwrap().copy_from_slice(&data);
+        frame1.header_mut().sequence = 1.into();
+
+        let mut frame2 = setup_frame_for_encryption_tests(&mut buffer2, true, data.len());
+        frame2.payload_mut().unwrap().copy_from_slice(&data);
+        frame2.header_mut().sequence = 2.into();
+
+        let keys = CryptoKeys::new([0x42; 16], [0x42; 32]);
+
+        frame1.encrypt::<SwCryptoEngine>(&keys).unwrap();
+        frame2.encrypt::<SwCryptoEngine>(&keys).unwrap();
+
+        assert_ne!(frame1.payload(), frame2.payload());
     }
 }
