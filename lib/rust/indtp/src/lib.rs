@@ -31,9 +31,8 @@
 pub mod macros;
 mod types;
 mod header;
-mod integrity;
 mod frame;
-mod crypto;
+mod engines;
 
 pub use header::*;
 pub use frame::*;
@@ -42,7 +41,9 @@ pub use types::{Error, Result};
 pub(crate) mod prelude {
     pub use zerocopy::{IntoBytes, FromBytes, Immutable, KnownLayout};
     pub use crate::{Error, Result};
-    pub use crate::integrity::IntegrityEngine;
     pub use crate::header::*;
     pub use crate::types::*;
+    pub use crate::engines::{
+        SwIntegrityEngine, SwCryptoEngine, IntegrityEngine, CryptographyEngine
+    };
 }

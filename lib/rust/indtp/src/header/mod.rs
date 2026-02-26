@@ -11,9 +11,7 @@ pub use mode::*;
 
 use zerocopy::little_endian::{U16, U32};
 use core::ops::Range;
-use crate::{
-    prelude::*, integrity::IntegrityEngine, types::Packable, indtp_data,
-};
+use crate::prelude::*;
 
 /// Protocol version encoded as `MMMMmmmm` (4 bits Major, 4 bits Minor).
 pub const INDTP_VERSION: u8 = 0x10;
@@ -204,7 +202,6 @@ impl Packable for Header {
 
 #[cfg(test)]
 mod tests {
-    use crate::integrity::SwIntegrityEngine;
     use super::*;
 
     #[test]
