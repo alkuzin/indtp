@@ -29,12 +29,12 @@
 
 #[macro_use]
 pub mod macros;
+mod batch;
 mod engines;
 mod frame;
 mod header;
 mod payload;
 mod types;
-mod batch;
 
 pub use frame::*;
 pub use header::*;
@@ -42,7 +42,7 @@ pub use types::{Error, Result};
 
 pub(crate) mod prelude {
     pub use crate::{
-        Error, Result, engines::*, header::*, payload::*, types::*, batch::*,
+        Error, Result, batch::*, engines::*, header::*, payload::*, types::*,
     };
     pub use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 }

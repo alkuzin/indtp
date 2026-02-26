@@ -751,7 +751,11 @@ impl<'a> Frame<'a> {
     /// - Invalid operation.
     /// - Buffer overflow.
     /// - Parse errors.
-    pub fn push_single_sample(&mut self, timestamp: u32, data: &[u8]) -> Result<()> {
+    pub fn push_single_sample(
+        &mut self,
+        timestamp: u32,
+        data: &[u8],
+    ) -> Result<()> {
         if self.is_batch() {
             return Err(Error::InvalidOperation);
         }
@@ -764,11 +768,13 @@ impl<'a> Frame<'a> {
 
         let payload = self.payload_mut()?;
 
-        payload.get_mut(0..4)
+        payload
+            .get_mut(0..4)
             .ok_or(Error::ParseError)?
             .copy_from_slice(&timestamp.to_le_bytes());
 
-        payload.get_mut(4..required_len)
+        payload
+            .get_mut(4..required_len)
             .ok_or(Error::ParseError)?
             .copy_from_slice(data);
 
@@ -1052,7 +1058,7 @@ mod tests {
     fn setup_frame_for_batch_tests(
         buffer: &mut [u8],
         batch_mode: bool,
-        payload_len: usize
+        payload_len: usize,
     ) -> Frame<'_> {
         Frame::new(
             buffer,
@@ -1063,7 +1069,8 @@ mod tests {
                 .with_mode(Mode::Lite)
                 .with_batch(batch_mode)
                 .build(),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
@@ -1113,7 +1120,7 @@ mod tests {
     fn setup_frame_for_encryption_tests(
         buffer: &mut [u8],
         encryption: bool,
-        payload_len: usize
+        payload_len: usize,
     ) -> Frame<'_> {
         Frame::new(
             buffer,
@@ -1124,14 +1131,19 @@ mod tests {
                 .with_mode(Mode::Critical)
                 .with_encryption(encryption)
                 .build(),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
     fn test_encrypt_decrypt_roundtrip() {
         let mut buffer = [0u8; 64];
         let original_data = [0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE];
-        let mut frame = setup_frame_for_encryption_tests(&mut buffer, true, original_data.len());
+        let mut frame = setup_frame_for_encryption_tests(
+            &mut buffer,
+            true,
+            original_data.len(),
+        );
 
         let keys = CryptoKeys::new([0x42; 16], [0x42; 32]);
         frame.set_payload_raw(&original_data, 0x7F).unwrap();
@@ -1162,11 +1174,13 @@ mod tests {
         let mut buffer2 = [0u8; 64];
         let data = [0x55; 16];
 
-        let mut frame1 = setup_frame_for_encryption_tests(&mut buffer1, true, data.len());
+        let mut frame1 =
+            setup_frame_for_encryption_tests(&mut buffer1, true, data.len());
         frame1.payload_mut().unwrap().copy_from_slice(&data);
         frame1.header_mut().sequence = 1.into();
 
-        let mut frame2 = setup_frame_for_encryption_tests(&mut buffer2, true, data.len());
+        let mut frame2 =
+            setup_frame_for_encryption_tests(&mut buffer2, true, data.len());
         frame2.payload_mut().unwrap().copy_from_slice(&data);
         frame2.header_mut().sequence = 2.into();
 

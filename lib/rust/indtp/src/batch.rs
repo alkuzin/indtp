@@ -3,7 +3,7 @@
 
 //! INDTP batch implementation.
 
-use crate::{prelude::*, Frame};
+use crate::{Frame, prelude::*};
 
 /// Active batch record context.
 pub struct Batch<'b, 'a> {
@@ -26,7 +26,12 @@ impl<'b, 'a> Batch<'b, 'a> {
     /// # Returns
     /// - New active batch record context.
     pub fn new(frame: &'b mut Frame<'a>) -> Self {
-        Self { frame, sample_count: 0, offset: 0, prev_timestamp: 0 }
+        Self {
+            frame,
+            sample_count: 0,
+            offset: 0,
+            prev_timestamp: 0,
+        }
     }
 
     /// Push sample into the batch.
@@ -57,7 +62,8 @@ impl<'b, 'a> Batch<'b, 'a> {
 
         if is_first {
             // First sample contains an absolute timestamp (u32).
-            payload.get_mut(current_pos..current_pos + 4)
+            payload
+                .get_mut(current_pos..current_pos + 4)
                 .ok_or(Error::ParseError)?
                 .copy_from_slice(&timestamp.to_le_bytes());
 
@@ -67,7 +73,8 @@ impl<'b, 'a> Batch<'b, 'a> {
             // sample followed by sensor data.
             let delta = timestamp.wrapping_sub(self.prev_timestamp) as u16;
 
-            payload.get_mut(current_pos..current_pos + 2)
+            payload
+                .get_mut(current_pos..current_pos + 2)
                 .ok_or(Error::ParseError)?
                 .copy_from_slice(&delta.to_le_bytes());
 
@@ -79,7 +86,8 @@ impl<'b, 'a> Batch<'b, 'a> {
         // Handling sample data.
         let data_start = current_pos + timestamp_size;
 
-        payload.get_mut(data_start..data_start + data.len())
+        payload
+            .get_mut(data_start..data_start + data.len())
             .ok_or(Error::ParseError)?
             .copy_from_slice(data);
 
@@ -93,10 +101,11 @@ impl<'b, 'a> Batch<'b, 'a> {
 impl<'b, 'a> Drop for Batch<'b, 'a> {
     /// Batch destructor.
     fn drop(&mut self) {
-        if self.sample_count > 0 {
-            if let Ok(payload) = self.frame.payload_mut() {
-                payload[0] = self.sample_count;
-            }
+        if self.sample_count > 0
+            && let Ok(payload) = self.frame.payload_mut()
+            && let Some(first_byte) = payload.get_mut(0)
+        {
+            *first_byte = self.sample_count;
         }
     }
 }
