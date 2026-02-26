@@ -27,6 +27,8 @@ pub enum Error {
     AuthFailed,
     /// Cryptographic error.
     CryptoError,
+    /// Invalid operation.
+    InvalidOperation,
 }
 
 impl Display for Error {
