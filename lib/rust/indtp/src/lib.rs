@@ -33,6 +33,7 @@ mod types;
 mod header;
 mod integrity;
 mod frame;
+mod crypto;
 
 pub use header::*;
 pub use frame::*;
@@ -43,4 +44,5 @@ pub(crate) mod prelude {
     pub use crate::{Error, Result};
     pub use crate::integrity::IntegrityEngine;
     pub use crate::header::*;
+    pub use crate::types::*;
 }

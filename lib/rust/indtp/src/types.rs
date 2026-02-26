@@ -93,3 +93,28 @@ pub trait Packable: Sized + Data {
         Self::as_bytes(self)
     }
 }
+
+/// AES-128 key type alias.
+pub type AesKey = [u8; 16];
+
+/// HMAC-SHA256 key type alias.
+pub type HmacKey = [u8; 32];
+
+/// Container for cryptographic keys.
+pub struct CryptoKeys {
+    /// AES-128 key.
+    pub aes_key: AesKey,
+    /// HMAC-SHA256 key.
+    pub hmac_key: HmacKey,
+}
+
+impl CryptoKeys {
+    /// Construct new container for cryptographic keys.
+    ///
+    /// # Parameters
+    /// - `aes_key` - given AES key to store.
+    /// - `hmac_key` - given HMAC key to store.
+    pub fn new(aes_key: AesKey, hmac_key: HmacKey) -> Self {
+        Self { aes_key, hmac_key }
+    }
+}
