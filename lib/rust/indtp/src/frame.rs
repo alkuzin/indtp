@@ -3,8 +3,8 @@
 
 //! INDTP frame related declarations.
 
-use zerocopy::{little_endian::{U16, U32}};
 use crate::prelude::*;
+use zerocopy::little_endian::{U16, U32};
 
 /// Maximum Transmission Unit (MTU) size in bytes.
 ///
@@ -171,7 +171,7 @@ impl<'a> Frame<'a> {
         flags: Flags,
     ) -> Result<Self> {
         if payload_len > PAYLOAD_MAX_SIZE {
-            return Err(Error::BufferOverflow)
+            return Err(Error::BufferOverflow);
         }
 
         let mode = Mode::try_from(flags).map_err(|_| Error::ParseError)?;
@@ -342,7 +342,9 @@ impl<'a> Frame<'a> {
     #[inline]
     pub fn payload(&self) -> Result<&[u8]> {
         let begin = HEADER_SIZE;
-        let data = self.buffer.get(begin..begin + self.payload_len)
+        let data = self
+            .buffer
+            .get(begin..begin + self.payload_len)
             .ok_or(Error::ParseError)?;
         Ok(data)
     }
@@ -358,7 +360,9 @@ impl<'a> Frame<'a> {
     #[inline]
     pub fn payload_mut(&mut self) -> Result<&mut [u8]> {
         let begin = HEADER_SIZE;
-        let data = self.buffer.get_mut(begin..begin + self.payload_len)
+        let data = self
+            .buffer
+            .get_mut(begin..begin + self.payload_len)
             .ok_or(Error::ParseError)?;
         Ok(data)
     }
@@ -374,7 +378,9 @@ impl<'a> Frame<'a> {
     #[inline]
     pub fn trailer(&self) -> Result<&[u8]> {
         let begin = HEADER_SIZE + self.payload_len;
-        let data = self.buffer.get(begin..begin + self.trailer_len)
+        let data = self
+            .buffer
+            .get(begin..begin + self.trailer_len)
             .ok_or(Error::ParseError)?;
         Ok(data)
     }
@@ -390,7 +396,8 @@ impl<'a> Frame<'a> {
     #[inline]
     pub fn trailer_mut(&mut self) -> Result<&mut [u8]> {
         let begin = HEADER_SIZE + self.payload_len;
-        let data = self.buffer
+        let data = self
+            .buffer
             .get_mut(begin..begin + self.trailer_len)
             .ok_or(Error::ParseError)?;
 
@@ -446,7 +453,11 @@ impl<'a> Frame<'a> {
     ///
     /// # Errors
     /// - Buffer overflow.
-    pub fn set_payload_raw(&mut self, bytes: &[u8], payload_type: u8) -> Result<()> {
+    pub fn set_payload_raw(
+        &mut self,
+        bytes: &[u8],
+        payload_type: u8,
+    ) -> Result<()> {
         let payload_len = bytes.len();
 
         if payload_len > PAYLOAD_MAX_SIZE {
@@ -505,8 +516,7 @@ impl<'a> Frame<'a> {
     #[inline]
     pub fn authenticated_data(&self) -> Result<&[u8]> {
         let end = HEADER_SIZE + self.payload_len;
-        let data = self.buffer.get(0..end)
-            .ok_or(Error::ParseError)?;
+        let data = self.buffer.get(0..end).ok_or(Error::ParseError)?;
         Ok(data)
     }
 
@@ -531,23 +541,23 @@ impl<'a> Frame<'a> {
         let mode = self.mode()?;
 
         match mode {
-            Mode::Lite => {},
+            Mode::Lite => {}
             Mode::Verified => {
                 let crc32 = I::compute_crc32(auth_data);
                 self.trailer_mut()?.copy_from_slice(&crc32.to_le_bytes());
-            },
+            }
             Mode::Trusted => {
                 let k = keys.ok_or(Error::MissingKeys)?;
                 let mut mac = [0u8; 8];
                 C::compute_cmac(&k.aes_key, auth_data, &mut mac)?;
                 self.trailer_mut()?.copy_from_slice(&mac);
-            },
+            }
             Mode::Critical => {
                 let k = keys.ok_or(Error::MissingKeys)?;
                 let mut mac = [0u8; 32];
                 C::compute_hmac(&k.hmac_key, auth_data, &mut mac)?;
                 self.trailer_mut()?.copy_from_slice(&mac);
-            },
+            }
         }
 
         Ok(())
@@ -578,7 +588,7 @@ impl<'a> Frame<'a> {
         let mode = self.mode()?;
 
         match mode {
-            Mode::Lite => {},
+            Mode::Lite => {}
             Mode::Verified => {
                 let trailer: [u8; 4] = trailer_bytes
                     .get(0..4)
@@ -592,7 +602,7 @@ impl<'a> Frame<'a> {
                 if received_crc != computed_crc {
                     return Err(Error::IncorrectCrc);
                 }
-            },
+            }
             Mode::Trusted => {
                 let k = keys.ok_or(Error::MissingKeys)?;
                 let received_mac = trailer_bytes;
@@ -603,7 +613,7 @@ impl<'a> Frame<'a> {
                 if received_mac != computed_mac {
                     return Err(Error::AuthFailed);
                 }
-            },
+            }
             Mode::Critical => {
                 let k = keys.ok_or(Error::MissingKeys)?;
                 let received_mac = trailer_bytes;
@@ -614,7 +624,7 @@ impl<'a> Frame<'a> {
                 if received_mac != computed_mac {
                     return Err(Error::AuthFailed);
                 }
-            },
+            }
         }
 
         Ok(())
@@ -636,7 +646,10 @@ impl<'a> Frame<'a> {
     /// - Parse errors.
     /// - Incorrect CRC.
     /// - Failed authorisation.
-    pub fn parse<I, C>(buffer: &'a mut [u8], keys: Option<&CryptoKeys>) -> Result<Self>
+    pub fn parse<I, C>(
+        buffer: &'a mut [u8],
+        keys: Option<&CryptoKeys>,
+    ) -> Result<Self>
     where
         I: IntegrityEngine,
         C: CryptographyEngine,
@@ -651,14 +664,14 @@ impl<'a> Frame<'a> {
                     header.device_id,
                     header.payload_type,
                     header.payload_len.into(),
-                    Flags::from_bits(header.flags)
-                        .ok_or(Error::ParseError)?,
-                ).map_err(|_| Error::ParseError)?;
+                    Flags::from_bits(header.flags).ok_or(Error::ParseError)?,
+                )
+                .map_err(|_| Error::ParseError)?;
 
                 frame.validate_trailer::<I, C>(keys)?;
                 Ok(frame)
-            },
-            Err(e) => { Err(e) }
+            }
+            Err(e) => Err(e),
         }
     }
 
@@ -718,7 +731,8 @@ mod tests {
                 .with_encryption(true)
                 .with_priority(false)
                 .build(),
-        ).unwrap();
+        )
+        .unwrap();
     }
 
     #[test]
@@ -797,19 +811,24 @@ mod tests {
         assert_eq!(state, frame.is_high_priority());
     }
 
-    fn create_valid_frame_buffer(buffer: &mut [u8], mode: Mode, payload: &[u8]) {
-        let flags = Flags::new()
-            .with_mode(mode)
-            .build();
+    fn create_valid_frame_buffer(
+        buffer: &mut [u8],
+        mode: Mode,
+        payload: &[u8],
+    ) {
+        let flags = Flags::new().with_mode(mode).build();
 
         let mut frame = Frame::new(buffer, 0xAB, 0x00, payload.len(), flags)
             .expect("Failed to create frame skeleton");
 
-        frame.set_payload_raw(payload, 0x7F).expect("Failed to set payload");
+        frame
+            .set_payload_raw(payload, 0x7F)
+            .expect("Failed to set payload");
 
         let keys = CryptoKeys::new([0x42; 16], [0x55; 32]);
 
-        frame.pack::<SwIntegrityEngine, SwCryptoEngine>(Some(&keys))
+        frame
+            .pack::<SwIntegrityEngine, SwCryptoEngine>(Some(&keys))
             .expect("Failed to pack frame");
     }
 
@@ -819,8 +838,11 @@ mod tests {
         let mut buffer = [0_u8; 128];
         create_valid_frame_buffer(&mut buffer, Mode::Lite, &payload_data);
 
-        let frame = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(&mut buffer, None)
-            .expect("Parsing valid frame failed");
+        let frame = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(
+            &mut buffer,
+            None,
+        )
+        .expect("Parsing valid frame failed");
 
         assert_eq!(frame.mode().unwrap(), Mode::Lite);
         assert_eq!(frame.payload().unwrap(), &payload_data);
@@ -835,7 +857,10 @@ mod tests {
         create_valid_frame_buffer(&mut buffer, Mode::Lite, &payload_data);
 
         buffer[6] ^= 0xFF;
-        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(&mut buffer, None);
+        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(
+            &mut buffer,
+            None,
+        );
 
         assert!(res.is_err());
         assert_eq!(res.unwrap_err(), Error::IncorrectCrc);
@@ -848,13 +873,19 @@ mod tests {
 
         // Checking Verified mode.
         create_valid_frame_buffer(&mut buffer, Mode::Verified, &payload_data);
-        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(&mut buffer, None);
+        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(
+            &mut buffer,
+            None,
+        );
         assert!(res.is_ok());
 
         let p_start = HEADER_SIZE;
         buffer[p_start] ^= 0x01;
 
-        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(&mut buffer, None);
+        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(
+            &mut buffer,
+            None,
+        );
         assert!(res.is_err());
         assert_eq!(res.unwrap_err(), Error::IncorrectCrc);
 
@@ -862,25 +893,37 @@ mod tests {
 
         // Checking Trusted mode.
         create_valid_frame_buffer(&mut buffer, Mode::Trusted, &payload_data);
-        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(&mut buffer, Some(&keys));
+        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(
+            &mut buffer,
+            Some(&keys),
+        );
         assert!(res.is_ok());
 
         let p_start = HEADER_SIZE;
         buffer[p_start] ^= 0x01;
 
-        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(&mut buffer, Some(&keys));
+        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(
+            &mut buffer,
+            Some(&keys),
+        );
         assert!(res.is_err());
         assert_eq!(res.unwrap_err(), Error::AuthFailed);
 
         // Checking Critical mode.
         create_valid_frame_buffer(&mut buffer, Mode::Critical, &payload_data);
-        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(&mut buffer, Some(&keys));
+        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(
+            &mut buffer,
+            Some(&keys),
+        );
         assert!(res.is_ok());
 
         let p_start = HEADER_SIZE;
         buffer[p_start] ^= 0x01;
 
-        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(&mut buffer, Some(&keys));
+        let res = Frame::parse::<SwIntegrityEngine, SwCryptoEngine>(
+            &mut buffer,
+            Some(&keys),
+        );
         assert!(res.is_err());
         assert_eq!(res.unwrap_err(), Error::AuthFailed);
     }

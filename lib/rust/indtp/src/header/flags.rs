@@ -3,8 +3,8 @@
 
 //! Protocol flags related declarations.
 
-use bitflags::bitflags;
 use crate::Mode;
+use bitflags::bitflags;
 
 bitflags! {
     /// Protocol flags type-safe wrapper.

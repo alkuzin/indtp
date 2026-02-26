@@ -3,9 +3,9 @@
 
 //! Integrity checking engine related declarations.
 
-#[cfg(feature = "sw_integrity")]
-use crc::{Crc, CRC_16_MCRF4XX, CRC_32_AUTOSAR};
 use crate::engines::IntegrityEngine;
+#[cfg(feature = "sw_integrity")]
+use crc::{CRC_16_MCRF4XX, CRC_32_AUTOSAR, Crc};
 
 #[cfg(feature = "sw_integrity")]
 /// Software implementation of integrity checking engine.

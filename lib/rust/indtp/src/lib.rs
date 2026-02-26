@@ -29,21 +29,19 @@
 
 #[macro_use]
 pub mod macros;
-mod types;
-mod header;
-mod frame;
 mod engines;
+mod frame;
+mod header;
 mod payload;
+mod types;
 
-pub use header::*;
 pub use frame::*;
+pub use header::*;
 pub use types::{Error, Result};
 
 pub(crate) mod prelude {
-    pub use zerocopy::{IntoBytes, FromBytes, Immutable, KnownLayout};
-    pub use crate::{Error, Result};
-    pub use crate::header::*;
-    pub use crate::types::*;
-    pub use crate::engines::*;
-    pub use crate::payload::*;
+    pub use crate::{
+        Error, Result, engines::*, header::*, payload::*, types::*,
+    };
+    pub use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 }

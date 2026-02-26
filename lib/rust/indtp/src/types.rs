@@ -3,8 +3,12 @@
 
 //! Types and types aliases used across the crate.
 
-use core::{error, result, fmt::{Display, Formatter}};
 use crate::prelude::*;
+use core::{
+    error,
+    fmt::{Display, Formatter},
+    result,
+};
 
 /// Protocol errors enumeration.
 #[derive(Debug, PartialEq)]

@@ -7,7 +7,7 @@
 mod sw;
 #[cfg(any(feature = "sw_integrity", feature = "sw_crypto"))]
 #[allow(unused)]
-pub use sw::{SwIntegrityEngine, SwCryptoEngine};
+pub use sw::{SwCryptoEngine, SwIntegrityEngine};
 
 use crate::prelude::*;
 
@@ -55,7 +55,11 @@ pub trait CryptographyEngine: Default {
     ///
     /// # Errors
     /// - Cryptographic errors.
-    fn compute_cmac(_key: &AesKey, _data: &[u8], _out: &mut [u8; 8]) -> Result<()> {
+    fn compute_cmac(
+        _key: &AesKey,
+        _data: &[u8],
+        _out: &mut [u8; 8],
+    ) -> Result<()> {
         unimplemented!(
             "Missing CMAC-AES-128 implementation for this cryptography engine."
         );
@@ -74,7 +78,11 @@ pub trait CryptographyEngine: Default {
     ///
     /// # Errors
     /// - Cryptographic errors.
-    fn compute_hmac(_key: &HmacKey, _data: &[u8], _out: &mut [u8; 32]) -> Result<()> {
+    fn compute_hmac(
+        _key: &HmacKey,
+        _data: &[u8],
+        _out: &mut [u8; 32],
+    ) -> Result<()> {
         unimplemented!(
             "Missing HMAC-SHA256 implementation for this cryptography engine."
         );
@@ -93,7 +101,11 @@ pub trait CryptographyEngine: Default {
     ///
     /// # Errors
     /// - Cryptographic errors.
-    fn compute_aes_ctr(_key: &AesKey, _nonce: &[u8], _data: &mut [u8]) -> Result<()> {
+    fn compute_aes_ctr(
+        _key: &AesKey,
+        _nonce: &[u8],
+        _data: &mut [u8],
+    ) -> Result<()> {
         unimplemented!(
             "Missing AES-128-CTR implementation for this cryptography engine."
         );

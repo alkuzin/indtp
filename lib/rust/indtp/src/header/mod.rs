@@ -9,8 +9,8 @@ mod mode;
 pub use flags::*;
 pub use mode::*;
 
-use zerocopy::little_endian::{U16, U32};
 use crate::prelude::*;
+use zerocopy::little_endian::{U16, U32};
 
 /// Protocol version encoded as `MMMMmmmm` (4 bits Major, 4 bits Minor).
 pub const INDTP_VERSION: u8 = 0x10;
@@ -78,12 +78,13 @@ impl Header {
     /// # Returns
     /// - `CRC-16` value in **Little-Endian** byte order in case of success.
     /// - `Err` - otherwise.
-    /// 
+    ///
     /// # Errors
     /// - Parse errors.
     #[inline]
     pub fn compute_crc<I: IntegrityEngine>(&self) -> Result<u16> {
-        let data = &self.as_bytes()
+        let data = &self
+            .as_bytes()
             .get(0..Self::CRC_OFFSET)
             .ok_or(Error::ParseError)?;
 
@@ -120,7 +121,10 @@ impl Header {
     /// - Buffer underflow.
     /// - Parse errors.
     /// - Incorrect CRC.
-    pub fn pack_into<I: IntegrityEngine>(&self, buffer: &mut [u8]) -> Result<()> {
+    pub fn pack_into<I: IntegrityEngine>(
+        &self,
+        buffer: &mut [u8],
+    ) -> Result<()> {
         // Checking size.
         if buffer.len() < HEADER_SIZE {
             return Err(Error::BufferUnderflow);
@@ -173,9 +177,7 @@ impl Header {
         }
 
         // Checking CRC.
-        let data = buffer
-            .get(0..Self::CRC_OFFSET)
-            .ok_or(Error::ParseError)?;
+        let data = buffer.get(0..Self::CRC_OFFSET).ok_or(Error::ParseError)?;
 
         let computed_crc = I::compute_crc16(data);
 
@@ -248,9 +250,11 @@ mod tests {
     fn test_compute_crc_consistency() {
         let header = create_test_header();
 
-        let crc1 = header.compute_crc::<SwIntegrityEngine>()
+        let crc1 = header
+            .compute_crc::<SwIntegrityEngine>()
             .expect("Failed to compute CRC 1");
-        let crc2 = header.compute_crc::<SwIntegrityEngine>()
+        let crc2 = header
+            .compute_crc::<SwIntegrityEngine>()
             .expect("Failed to compute CRC 2");
 
         assert_eq!(crc1, crc2);
@@ -264,9 +268,11 @@ mod tests {
 
         header2.device_id = 0xFF;
 
-        let crc1 = header1.compute_crc::<SwIntegrityEngine>()
+        let crc1 = header1
+            .compute_crc::<SwIntegrityEngine>()
             .expect("Failed to compute CRC 1");
-        let crc2 = header2.compute_crc::<SwIntegrityEngine>()
+        let crc2 = header2
+            .compute_crc::<SwIntegrityEngine>()
             .expect("Failed to compute CRC 2");
 
         assert_ne!(crc1, crc2);
@@ -314,7 +320,8 @@ mod tests {
         let res = header.pack_into::<SwIntegrityEngine>(&mut buffer);
         assert!(res.is_ok());
 
-        let expected = header.pack::<SwIntegrityEngine>()
+        let expected = header
+            .pack::<SwIntegrityEngine>()
             .expect("Reference pack failed");
 
         assert_eq!(buffer, expected);
@@ -336,7 +343,8 @@ mod tests {
         let header = create_test_header();
         let mut buffer = [0xFFu8; HEADER_SIZE];
 
-        header.pack_into::<SwIntegrityEngine>(&mut buffer)
+        header
+            .pack_into::<SwIntegrityEngine>(&mut buffer)
             .expect("Pack failed");
 
         assert_ne!(buffer[0], 0xFF);
