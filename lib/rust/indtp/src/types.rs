@@ -17,6 +17,10 @@ pub enum Error {
     BufferOverflow,
     /// Incorrect Cyclic Redundancy Check.
     IncorrectCrc,
+    /// Missing cryptographic keys.
+    MissingKeys,
+    /// Authentication failed.
+    AuthFailed,
 }
 
 impl Display for Error {
