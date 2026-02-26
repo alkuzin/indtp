@@ -410,7 +410,7 @@ impl<'a> Frame<'a> {
     /// - Payload length in bytes.
     #[allow(unused)]
     #[inline]
-    fn payload_len(&self) -> usize {
+    pub(crate) fn payload_len(&self) -> usize {
         self.payload_len
     }
 
@@ -711,6 +711,71 @@ impl<'a> Frame<'a> {
     pub fn size(&self) -> usize {
         HEADER_SIZE + usize::from(self.header().payload_len) + self.payload_len
     }
+
+    /// Start data aggregation.
+    /// 
+    /// # Returns
+    /// - Active batch record context - in case of success.
+    /// - `Err` - otherwise.
+    /// 
+    /// # Errors
+    /// - Invalid operation.
+    /// - Buffer overflow.
+    /// - Parse errors.
+    pub fn start_batch(&mut self) -> Result<Batch<'_, 'a>> {
+        if self.is_batch() {
+            if self.payload_len < 1 {
+                return Err(Error::BufferOverflow);
+            }
+
+            self.payload_mut()?.fill(0);
+
+            let batch = Batch::new(self);
+            return Ok(batch);
+        }
+
+        Err(Error::InvalidOperation)
+    }
+
+    /// Push single sample. Must be used only if single sample mode is enabled.
+    ///
+    /// # Parameters
+    /// - `timestamp` - given sensor-local time to push.
+    /// - `data` - given sample data to store.
+    ///
+    /// # Returns
+    /// - `Ok` - in case of success.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Invalid operation.
+    /// - Buffer overflow.
+    /// - Parse errors.
+    pub fn push_single_sample(&mut self, timestamp: u32, data: &[u8]) -> Result<()> {
+        if self.is_batch() {
+            return Err(Error::InvalidOperation);
+        }
+
+        let required_len = 4 + data.len();
+
+        if required_len > self.payload_len() {
+            return Err(Error::BufferOverflow);
+        }
+
+        let payload = self.payload_mut()?;
+
+        payload.get_mut(0..4)
+            .ok_or(Error::ParseError)?
+            .copy_from_slice(&timestamp.to_le_bytes());
+
+        payload.get_mut(4..required_len)
+            .ok_or(Error::ParseError)?
+            .copy_from_slice(data);
+
+        Ok(())
+    }
+
+    // TODO: handle payload encryption.
 }
 
 #[cfg(test)]
@@ -926,5 +991,66 @@ mod tests {
         );
         assert!(res.is_err());
         assert_eq!(res.unwrap_err(), Error::AuthFailed);
+    }
+
+    fn setup_frame_for_batch_tests(
+        buffer: &mut [u8],
+        batch_mode: bool,
+        payload_len: usize
+    ) -> Frame<'_> {
+        Frame::new(
+            buffer,
+            0xAB,
+            0x00,
+            payload_len,
+            Flags::new()
+                .with_mode(Mode::Lite)
+                .with_batch(batch_mode)
+                .build(),
+        ).unwrap()
+    }
+
+    #[test]
+    fn test_single_sample_mode() {
+        let mut buffer = [0u8; 32];
+        let mut frame = setup_frame_for_batch_tests(&mut buffer, false, 10);
+
+        frame.push_single_sample(1000, &[0xAA, 0xBB]).unwrap();
+
+        let payload = frame.payload().unwrap();
+
+        assert_eq!(&payload[0..4], &[0xE8, 0x03, 0x00, 0x00]);
+        assert_eq!(&payload[4..6], &[0xAA, 0xBB]);
+    }
+
+    #[test]
+    fn test_batch_delta_encoding() {
+        let mut buffer = [0u8; 34];
+        let mut frame = setup_frame_for_batch_tests(&mut buffer, true, 20);
+
+        {
+            let mut batch = frame.start_batch().unwrap();
+            batch.push_sample(2000, &[0x11]).unwrap();
+            batch.push_sample(2050, &[0x22]).unwrap();
+        }
+
+        let p = frame.payload().unwrap();
+        assert_eq!(p[0], 2);
+
+        assert_eq!(&p[1..5], &[0xD0, 0x07, 0x00, 0x00]);
+        assert_eq!(p[5], 0x11);
+
+        assert_eq!(&p[6..8], &[0x32, 0x00]);
+        assert_eq!(p[8], 0x22);
+    }
+
+    #[test]
+    fn test_buffer_overflow_protection() {
+        let mut buffer = [0u8; 32];
+        let mut frame = setup_frame_for_batch_tests(&mut buffer, false, 5);
+
+        let err = frame.push_single_sample(12345, &[0x01, 0x02]).unwrap_err();
+        assert!(matches!(err, Error::BufferOverflow));
+        assert_eq!(frame.payload().unwrap()[0], 0);
     }
 }
