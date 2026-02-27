@@ -8,8 +8,8 @@ use indtp::{
     engines::{
         CryptographyEngine, IntegrityEngine, SwCryptoEngine, SwIntegrityEngine,
     },
-    payload::{Imu6, Imu3Acc, Imu3Gyr, PayloadType},
-    types::{Packable, AesKey, CryptoKeys, HmacKey},
+    payload::{Imu3Acc, Imu3Gyr, Imu6, PayloadType},
+    types::{AesKey, CryptoKeys, HmacKey, Packable},
 };
 
 fn main() {

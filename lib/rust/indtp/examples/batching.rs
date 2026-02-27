@@ -40,7 +40,11 @@ where
     let mut frame =
         Frame::new_lite(&mut buffer, device_id, payload_type, payload_len + 4)?;
 
-    let sample = Imu3Acc { acc_x: 1.4, acc_y: 2.5, acc_z: 3.6 };
+    let sample = Imu3Acc {
+        acc_x: 1.4,
+        acc_y: 2.5,
+        acc_z: 3.6,
+    };
     let timestamp: u32 = 12345;
 
     // Enabling single sample mode.
@@ -97,9 +101,30 @@ where
     let mut batch = frame.start_batch()?;
 
     let samples = [
-        (1_000_000u32, Imu3Acc { acc_x: 1.0, acc_y: 2.0, acc_z: 3.0 }),
-        (1_000_100u32, Imu3Acc { acc_x: 2.0, acc_y: 4.0, acc_z: 9.0 }),
-        (1_000_150u32, Imu3Acc { acc_x: 3.0, acc_y: 8.0, acc_z: 1.0 }),
+        (
+            1_000_000u32,
+            Imu3Acc {
+                acc_x: 1.0,
+                acc_y: 2.0,
+                acc_z: 3.0,
+            },
+        ),
+        (
+            1_000_100u32,
+            Imu3Acc {
+                acc_x: 2.0,
+                acc_y: 4.0,
+                acc_z: 9.0,
+            },
+        ),
+        (
+            1_000_150u32,
+            Imu3Acc {
+                acc_x: 3.0,
+                acc_y: 8.0,
+                acc_z: 1.0,
+            },
+        ),
     ];
 
     for (t, data) in samples.iter() {

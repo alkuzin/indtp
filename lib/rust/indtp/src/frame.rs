@@ -783,7 +783,10 @@ impl<'a> Frame<'a> {
     /// - Invalid operation.
     /// - Parse errors.
     #[inline]
-    pub fn read_batch_samples(&self, sample_size: usize) -> Result<BatchIterator<'_>> {
+    pub fn read_batch_samples(
+        &self,
+        sample_size: usize,
+    ) -> Result<BatchIterator<'_>> {
         if !self.is_batch() {
             return Err(Error::InvalidOperation);
         }
@@ -1290,7 +1293,10 @@ mod tests {
         let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 3).unwrap();
 
         frame.set_batch(false);
-        frame.payload_mut().unwrap().copy_from_slice(&[0x01, 0x02, 0x03]);
+        frame
+            .payload_mut()
+            .unwrap()
+            .copy_from_slice(&[0x01, 0x02, 0x03]);
         assert_eq!(frame.read_single_sample(), Err(Error::ParseError));
     }
 
@@ -1344,13 +1350,20 @@ mod tests {
     fn test_read_batch_samples_delta_reconstruction() {
         let mut buffer = [0u8; 128];
         let payload_len = 1 + 4 + 4 + 2 * (2 + 4);
-        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
+        let mut frame =
+            Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
         frame.set_batch(true);
 
         let mut batch = frame.start_batch().unwrap();
-        batch.push_sample(1_000_000, &[0xAA, 0xBB, 0xCC, 0xDD]).unwrap();
-        batch.push_sample(1_000_010, &[0x11, 0x22, 0x33, 0x44]).unwrap();
-        batch.push_sample(1_000_025, &[0xEE, 0xFF, 0x00, 0x11]).unwrap();
+        batch
+            .push_sample(1_000_000, &[0xAA, 0xBB, 0xCC, 0xDD])
+            .unwrap();
+        batch
+            .push_sample(1_000_010, &[0x11, 0x22, 0x33, 0x44])
+            .unwrap();
+        batch
+            .push_sample(1_000_025, &[0xEE, 0xFF, 0x00, 0x11])
+            .unwrap();
         drop(batch);
 
         let iterator = frame.read_batch_samples(4).unwrap();
@@ -1370,12 +1383,17 @@ mod tests {
     fn test_read_batch_samples_wraparound_delta() {
         let mut buffer = [0u8; 128];
         let payload_len = 1 + 4 + 4 + (2 + 4);
-        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
+        let mut frame =
+            Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
         frame.set_batch(true);
 
         let mut batch = frame.start_batch().unwrap();
-        batch.push_sample(0xFFFF_FFF0u32, &[0xDE, 0xAD, 0xBE, 0xEF]).unwrap();
-        batch.push_sample(0x0000_0005u32, &[0xCA, 0xFE, 0xBA, 0xBE]).unwrap();
+        batch
+            .push_sample(0xFFFF_FFF0u32, &[0xDE, 0xAD, 0xBE, 0xEF])
+            .unwrap();
+        batch
+            .push_sample(0x0000_0005u32, &[0xCA, 0xFE, 0xBA, 0xBE])
+            .unwrap();
         drop(batch);
 
         let iterator = frame.read_batch_samples(4).unwrap();
@@ -1394,7 +1412,12 @@ mod tests {
         let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 10).unwrap();
 
         frame.set_batch(true);
-        frame.set_payload_raw(&[2, 0, 0, 0, 0, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE], 0x7F).unwrap();
+        frame
+            .set_payload_raw(
+                &[2, 0, 0, 0, 0, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE],
+                0x7F,
+            )
+            .unwrap();
 
         let iterator = frame.read_batch_samples(4).unwrap();
         let mut it = iterator;

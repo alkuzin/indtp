@@ -145,12 +145,10 @@ impl<'a> BatchIterator<'a> {
             return Err(Error::ParseError);
         }
 
-        let sample_count = payload[0];
+        let sample_count = *payload.first().ok_or(Error::ParseError)?;
 
-        if sample_count > 0 {
-            if payload.len() < 5 {
-                return Err(Error::ParseError);
-            }
+        if sample_count > 0 && payload.len() < 5 {
+            return Err(Error::ParseError);
         }
 
         Ok(Self {
@@ -181,9 +179,11 @@ impl<'a> Iterator for BatchIterator<'a> {
 
         let timestamp = if is_first {
             // Handling an absolute timestamp in first sample.
-            let timestamp_bytes: [u8; 4]
-                = self.payload.get(self.offset..self.offset + 4)
-                .ok_or(Error::ParseError).ok()?
+            let timestamp_bytes: [u8; 4] = self
+                .payload
+                .get(self.offset..self.offset + 4)
+                .ok_or(Error::ParseError)
+                .ok()?
                 .try_into()
                 .ok()?;
 
@@ -192,9 +192,11 @@ impl<'a> Iterator for BatchIterator<'a> {
             timestamp
         } else {
             //  Handling delta timestamp in other samples.
-            let delta_bytes: [u8; 2]
-                = self.payload.get(self.offset..self.offset + 2)
-                .ok_or(Error::ParseError).ok()?
+            let delta_bytes: [u8; 2] = self
+                .payload
+                .get(self.offset..self.offset + 2)
+                .ok_or(Error::ParseError)
+                .ok()?
                 .try_into()
                 .ok()?;
 
@@ -210,9 +212,11 @@ impl<'a> Iterator for BatchIterator<'a> {
             return Some(Err(Error::ParseError));
         }
 
-        let data = &self.payload
+        let data = &self
+            .payload
             .get(self.offset..self.offset + self.sample_size)
-            .ok_or(Error::ParseError).ok()?;
+            .ok_or(Error::ParseError)
+            .ok()?;
 
         self.offset += self.sample_size;
         self.current_idx += 1;

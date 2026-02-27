@@ -8,7 +8,7 @@ use indtp::{
     engines::{
         CryptographyEngine, IntegrityEngine, SwCryptoEngine, SwIntegrityEngine,
     },
-    payload::{Imu6, Imu3Acc, Imu3Gyr, PayloadType},
+    payload::{Imu3Acc, Imu3Gyr, Imu6, PayloadType},
     types::Packable,
 };
 
