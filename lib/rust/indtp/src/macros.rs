@@ -9,7 +9,7 @@ macro_rules! indtp_data {
     ($($item:item)*) => {
         $(
             #[derive(
-                Clone, Copy,
+                Debug, Clone, Copy,
                 $crate::prelude::IntoBytes,
                 $crate::prelude::FromBytes,
                 $crate::prelude::Immutable,
