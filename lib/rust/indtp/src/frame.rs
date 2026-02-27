@@ -759,7 +759,9 @@ impl<'a> Frame<'a> {
                 return Err(Error::BufferOverflow);
             }
 
-            self.payload_mut()?.fill(0);
+            if let Some(first_byte) = self.payload_mut()?.get_mut(0) {
+                *first_byte = 0;
+            }
 
             let batch = Batch::new(self);
             return Ok(batch);
@@ -810,6 +812,36 @@ impl<'a> Frame<'a> {
             .copy_from_slice(data);
 
         Ok(())
+    }
+
+    /// Read single sample. Must be used only if single sample mode is enabled.
+    ///
+    /// # Parameters
+    ///
+    /// # Returns
+    /// - Sensor-local time & sample data - in case of success.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Invalid operation.
+    /// - Buffer overflow.
+    /// - Parse errors.
+    pub fn read_single_sample(&self) -> Result<(u32, &[u8])> {
+        if self.is_batch() {
+            return Err(Error::InvalidOperation);
+        }
+
+        let payload = self.payload()?;
+
+        let timestamp_bytes = payload
+            .get(0..4)
+            .and_then(|slice| slice.try_into().ok())
+            .ok_or(Error::ParseError)?;
+
+        let timestamp = u32::from_le_bytes(timestamp_bytes);
+        let data = payload.get(4..).ok_or(Error::ParseError)?;
+
+        Ok((timestamp, data))
     }
 
     /// Encrypt payload. Only if `ENCRYPT` flag is set.
@@ -1222,5 +1254,49 @@ mod tests {
         frame2.encrypt::<SwCryptoEngine>(&keys).unwrap();
 
         assert_ne!(frame1.payload(), frame2.payload());
+    }
+
+    #[test]
+    fn test_read_single_sample_batch_mode_error() {
+        let mut buffer = [0u8; 64];
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 16).unwrap();
+
+        frame.set_batch(true);
+        assert_eq!(frame.read_single_sample(), Err(Error::InvalidOperation));
+    }
+
+    #[test]
+    fn test_read_single_sample_short_payload() {
+        let mut buffer = [0u8; 64];
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 3).unwrap();
+
+        frame.set_batch(false);
+        frame.payload_mut().unwrap().copy_from_slice(&[0x01, 0x02, 0x03]);
+        assert_eq!(frame.read_single_sample(), Err(Error::ParseError));
+    }
+
+    #[test]
+    fn test_read_single_sample_empty_payload() {
+        let mut buffer = [0u8; 64];
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 0).unwrap();
+
+        frame.set_batch(false);
+        assert_eq!(frame.read_single_sample(), Err(Error::ParseError));
+    }
+
+    #[test]
+    fn test_read_single_sample_zero_data() {
+        let mut buffer = [0u8; 64];
+        let payload_len = 4;
+        let mut frame =
+            Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
+
+        let original_ts = 0xFFFF_FFFFu32;
+        frame.push_single_sample(original_ts, &[]).unwrap();
+
+        let (ts, data) = frame.read_single_sample().unwrap();
+
+        assert_eq!(ts, original_ts);
+        assert!(data.is_empty());
     }
 }
