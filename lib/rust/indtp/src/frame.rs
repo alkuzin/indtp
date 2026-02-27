@@ -867,6 +867,7 @@ impl<'a> Frame<'a> {
         C: CryptographyEngine,
     {
         self.encrypt::<C>(keys)?;
+        self.set_encrypted(false);
         Ok(())
     }
 }
