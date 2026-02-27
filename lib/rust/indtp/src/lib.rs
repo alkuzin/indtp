@@ -5,15 +5,32 @@
 //! binary application-layer (L7) protocol designed specifically for the
 //! **Inertial Navigation Systems (INS)** and autonomous platforms.
 //!
-//! INDTP addresses the critical trade-off between low-latency real-time data
-//! streaming, robustness against the noise, and cryptographic security.
+//! **INDTP** addresses the critical trade-off between low-latency real-time
+//! data streaming, robustness against the noise, and cryptographic security.
 //! The protocol features a compact fixed size header, support for data
 //! aggregation in order to minimize overhead at high sampling rates,
 //! and a flexible multimode security architecture.
 //!
-//! INDTP serves as a unified communication standard for modern navigation
+//! **INDTP** serves as a unified communication standard for modern navigation
 //! stacks, ensuring reliable, secure, and temporally synchronized data
 //! exchange under diverse operational conditions.
+//!
+//! # Features
+//!
+//! - `sw_integrity` - enable software-based calculation for integrity checks.
+//! - `sw_crypto` - enable software-based calculation for cryptography.
+//! - `std_payloads` - Feature that enables standard payloads.
+//! - `sw_impl` - enable software-based calculation for integrity checks and
+//!   cryptography.
+//!
+//! > Crate enabling some features by default:
+//! - `sw_impl`;
+//! - `std_payloads`.
+//!
+//! In order to disable them (if needed) use:
+//! ```toml
+//! indtp = { ..., default-features = false }
+//! ```
 
 #![no_std]
 #![warn(clippy::all, clippy::correctness, clippy::suspicious)]
@@ -35,6 +52,7 @@ mod frame;
 mod header;
 mod payload;
 mod types;
+pub mod utils;
 
 pub use frame::*;
 pub use header::*;
