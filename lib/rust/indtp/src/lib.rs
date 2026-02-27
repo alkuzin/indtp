@@ -47,11 +47,11 @@
 #[macro_use]
 pub mod macros;
 mod batch;
-mod engines;
+pub mod engines;
 mod frame;
 mod header;
-mod payload;
-mod types;
+pub mod payload;
+pub mod types;
 pub mod utils;
 
 pub use frame::*;

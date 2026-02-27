@@ -59,6 +59,7 @@ pub trait Data: IntoBytes + FromBytes + Immutable + KnownLayout {}
 /// Every type that has these traits also has `Data`.
 impl<T: IntoBytes + FromBytes + Immutable + KnownLayout> Data for T {}
 
+/// Trait for packing data.
 pub trait Packable: Sized + Data {
     /// Get size in bytes.
     ///
