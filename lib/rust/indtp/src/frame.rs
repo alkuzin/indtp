@@ -52,7 +52,7 @@ impl<'a> Frame<'a> {
     /// - Parse errors.
     #[allow(unused)]
     #[inline]
-    fn new_lite(
+    pub fn new_lite(
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
@@ -80,7 +80,7 @@ impl<'a> Frame<'a> {
     /// - Parse errors.
     #[allow(unused)]
     #[inline]
-    fn new_verified(
+    pub fn new_verified(
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
@@ -108,7 +108,7 @@ impl<'a> Frame<'a> {
     /// - Parse errors.
     #[allow(unused)]
     #[inline]
-    fn new_trusted(
+    pub fn new_trusted(
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
@@ -136,7 +136,7 @@ impl<'a> Frame<'a> {
     /// - Parse errors.
     #[allow(unused)]
     #[inline]
-    fn new_critical(
+    pub fn new_critical(
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
@@ -163,7 +163,7 @@ impl<'a> Frame<'a> {
     /// - Buffer underflow.
     /// - Buffer overflow.
     /// - Parse errors.
-    fn new(
+    pub fn new(
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
@@ -709,7 +709,38 @@ impl<'a> Frame<'a> {
     /// - Total size of the frame in bytes.
     #[inline]
     pub fn size(&self) -> usize {
-        HEADER_SIZE + usize::from(self.header().payload_len) + self.payload_len
+        HEADER_SIZE + self.payload_len + self.trailer_len
+    }
+
+    /// Get frame reference.
+    ///
+    /// # Returns
+    /// - Reference to frame byte slice.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse errors.
+    #[inline]
+    pub fn frame(&self) -> Result<&[u8]> {
+        let data = self.buffer.get(..self.size()).ok_or(Error::ParseError)?;
+        Ok(data)
+    }
+
+    /// Get mutable frame reference.
+    ///
+    /// # Returns
+    /// - Mutable reference to frame byte slice.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse errors.
+    #[inline]
+    pub fn frame_mut(&mut self) -> Result<&mut [u8]> {
+        let data = self
+            .buffer
+            .get_mut(..self.size())
+            .ok_or(Error::ParseError)?;
+        Ok(data)
     }
 
     /// Start data aggregation.
