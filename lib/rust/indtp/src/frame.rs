@@ -770,6 +770,27 @@ impl<'a> Frame<'a> {
         Err(Error::InvalidOperation)
     }
 
+    /// Get an iterator over batched samples.
+    ///
+    /// # Parameters
+    /// - `sample_size` - given size of sensor data portion per sample in bytes.
+    ///
+    /// # Returns
+    /// - An iterator over batched samples - in case of success.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Invalid operation.
+    /// - Parse errors.
+    #[inline]
+    pub fn read_batch_samples(&self, sample_size: usize) -> Result<BatchIterator<'_>> {
+        if !self.is_batch() {
+            return Err(Error::InvalidOperation);
+        }
+
+        BatchIterator::new(self.payload()?, sample_size)
+    }
+
     /// Push single sample. Must be used only if single sample mode is enabled.
     ///
     /// # Parameters
@@ -815,8 +836,6 @@ impl<'a> Frame<'a> {
     }
 
     /// Read single sample. Must be used only if single sample mode is enabled.
-    ///
-    /// # Parameters
     ///
     /// # Returns
     /// - Sensor-local time & sample data - in case of success.
@@ -1298,5 +1317,92 @@ mod tests {
 
         assert_eq!(ts, original_ts);
         assert!(data.is_empty());
+    }
+
+    #[test]
+    fn test_read_batch_samples_single_mode_error() {
+        let mut buffer = [0u8; 64];
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 16).unwrap();
+        frame.set_batch(false);
+
+        assert_eq!(frame.read_batch_samples(8), Err(Error::InvalidOperation));
+    }
+
+    #[test]
+    fn test_read_batch_samples_empty_batch() {
+        let mut buffer = [0u8; 64];
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 1).unwrap();
+
+        frame.set_batch(true);
+        frame.payload_mut().unwrap()[0] = 0;
+
+        let iterator = frame.read_batch_samples(8).unwrap();
+        assert_eq!(iterator.count(), 0);
+    }
+
+    #[test]
+    fn test_read_batch_samples_delta_reconstruction() {
+        let mut buffer = [0u8; 128];
+        let payload_len = 1 + 4 + 4 + 2 * (2 + 4);
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
+        frame.set_batch(true);
+
+        let mut batch = frame.start_batch().unwrap();
+        batch.push_sample(1_000_000, &[0xAA, 0xBB, 0xCC, 0xDD]).unwrap();
+        batch.push_sample(1_000_010, &[0x11, 0x22, 0x33, 0x44]).unwrap();
+        batch.push_sample(1_000_025, &[0xEE, 0xFF, 0x00, 0x11]).unwrap();
+        drop(batch);
+
+        let iterator = frame.read_batch_samples(4).unwrap();
+        let mut it = iterator;
+
+        let s0 = it.next().ok_or("Missing sample 0").unwrap().unwrap();
+        assert_eq!(s0.0, 1_000_000);
+
+        let s1 = it.next().ok_or("Missing sample 1").unwrap().unwrap();
+        assert_eq!(s1.0, 1_000_010);
+
+        let s2 = it.next().ok_or("Missing sample 2").unwrap().unwrap();
+        assert_eq!(s2.0, 1_000_025);
+    }
+
+    #[test]
+    fn test_read_batch_samples_wraparound_delta() {
+        let mut buffer = [0u8; 128];
+        let payload_len = 1 + 4 + 4 + (2 + 4);
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
+        frame.set_batch(true);
+
+        let mut batch = frame.start_batch().unwrap();
+        batch.push_sample(0xFFFF_FFF0u32, &[0xDE, 0xAD, 0xBE, 0xEF]).unwrap();
+        batch.push_sample(0x0000_0005u32, &[0xCA, 0xFE, 0xBA, 0xBE]).unwrap();
+        drop(batch);
+
+        let iterator = frame.read_batch_samples(4).unwrap();
+        let mut it = iterator;
+
+        let s0 = it.next().expect("Should have first sample").unwrap();
+        assert_eq!(s0.0, 0xFFFF_FFF0);
+
+        let s1 = it.next().expect("Should have second sample").unwrap();
+        assert_eq!(s1.0, 0x0000_0005);
+    }
+
+    #[test]
+    fn test_read_batch_samples_malformed_payload() {
+        let mut buffer = [0u8; 64];
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 10).unwrap();
+
+        frame.set_batch(true);
+        frame.set_payload_raw(&[2, 0, 0, 0, 0, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE], 0x7F).unwrap();
+
+        let iterator = frame.read_batch_samples(4).unwrap();
+        let mut it = iterator;
+
+        let first = it.next().expect("Iterator should not be empty");
+        assert!(first.is_ok());
+
+        let second = it.next().expect("Iterator should have a second item");
+        assert!(second.is_err());
     }
 }
