@@ -8,8 +8,7 @@ use indtp::{
     engines::{
         CryptographyEngine, IntegrityEngine, SwCryptoEngine, SwIntegrityEngine,
     },
-    payload::Imu6,
-    payload::{Imu3Acc, Imu3Gyr, PayloadType},
+    payload::{Imu6, Imu3Acc, Imu3Gyr, PayloadType},
     types::Packable,
 };
 
@@ -52,6 +51,32 @@ where
     let payload_type: u8 = PayloadType::Imu6.into();
     let payload_len = payload.size();
 
+    // For all protocol operating modes API is almost the same.
+    // Only Frame object construction is a little bit different:
+    //
+    // let mut frame =
+    // Frame::new_lite(&mut buffer, device_id, payload_type, payload_len)?;
+    // or:
+    // Frame::new_verified(&mut buffer, device_id, payload_type, payload_len)?;
+    // or:
+    // Frame::new_trusted(&mut buffer, device_id, payload_type, payload_len)?;
+    // or:
+    // Frame::new_critical(&mut buffer, device_id, payload_type, payload_len)?;
+    //
+    // For custom frame set up the one should use Frame::new() method:
+    //
+    // let mut frame = Frame::new(
+    //     &mut buffer,
+    //     device_id,
+    //     payload_type,
+    //     payload_len,
+    //     Flags::new()
+    //         .with_mode(Mode::Verified)
+    //         .with_encryption(true)
+    //         .with_priority(false)
+    //         .with_batch(true)
+    //         .build(),
+    // );
     let mut frame =
         Frame::new_lite(&mut buffer, device_id, payload_type, payload_len)?;
 
