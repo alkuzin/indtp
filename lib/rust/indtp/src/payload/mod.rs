@@ -36,16 +36,6 @@ pub trait Payload: Sized + Packable {
     }
 }
 
-/// Trait for converting payload to metrics array and vice versa.
-pub trait AsMetricsArray<const N: usize> {
-    /// Convert metrics to a fixed-size array for.
-    ///
-    /// # Returns
-    /// - Fixed-size array of payload members.
-    #[allow(unused)]
-    fn to_array(&self) -> [f32; N];
-}
-
 /// Enumeration of standard payload types.
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]

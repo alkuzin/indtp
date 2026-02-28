@@ -105,30 +105,10 @@ impl Payload for Imu3Acc {
     const TYPE_ID: u8 = PayloadType::Imu3Acc.as_u8();
 }
 
-impl AsMetricsArray<3> for Imu3Acc {
-    /// Convert metrics to a fixed-size array for.
-    ///
-    /// # Returns
-    /// - Fixed-size array of payload members.
-    fn to_array(&self) -> [f32; 3] {
-        [self.acc_x, self.acc_y, self.acc_z]
-    }
-}
-
 impl Packable for Imu3Gyr {}
 
 impl Payload for Imu3Gyr {
     const TYPE_ID: u8 = PayloadType::Imu3Gyr.as_u8();
-}
-
-impl AsMetricsArray<3> for Imu3Gyr {
-    /// Convert metrics to a fixed-size array for.
-    ///
-    /// # Returns
-    /// - Fixed-size array of payload members.
-    fn to_array(&self) -> [f32; 3] {
-        [self.gyr_x, self.gyr_y, self.gyr_z]
-    }
 }
 
 impl Packable for Imu3Mag {}
@@ -137,37 +117,10 @@ impl Payload for Imu3Mag {
     const TYPE_ID: u8 = PayloadType::Imu3Mag.as_u8();
 }
 
-impl AsMetricsArray<3> for Imu3Mag {
-    /// Convert metrics to a fixed-size array for.
-    ///
-    /// # Returns
-    /// - Fixed-size array of payload members.
-    fn to_array(&self) -> [f32; 3] {
-        [self.mag_x, self.mag_y, self.mag_z]
-    }
-}
-
 impl Packable for Imu6 {}
 
 impl Payload for Imu6 {
     const TYPE_ID: u8 = PayloadType::Imu6.as_u8();
-}
-
-impl AsMetricsArray<6> for Imu6 {
-    /// Convert metrics to a fixed-size array for.
-    ///
-    /// # Returns
-    /// - Fixed-size array of payload members.
-    fn to_array(&self) -> [f32; 6] {
-        [
-            self.acc.acc_x,
-            self.acc.acc_y,
-            self.acc.acc_z,
-            self.gyr.gyr_x,
-            self.gyr.gyr_y,
-            self.gyr.gyr_z,
-        ]
-    }
 }
 
 impl Packable for Imu9 {}
@@ -176,65 +129,14 @@ impl Payload for Imu9 {
     const TYPE_ID: u8 = PayloadType::Imu9.as_u8();
 }
 
-impl AsMetricsArray<9> for Imu9 {
-    /// Convert metrics to a fixed-size array for.
-    ///
-    /// # Returns
-    /// - Fixed-size array of payload members.
-    fn to_array(&self) -> [f32; 9] {
-        [
-            self.acc.acc_x,
-            self.acc.acc_y,
-            self.acc.acc_z,
-            self.gyr.gyr_x,
-            self.gyr.gyr_y,
-            self.gyr.gyr_z,
-            self.mag.mag_x,
-            self.mag.mag_y,
-            self.mag.mag_z,
-        ]
-    }
-}
-
 impl Packable for Imu10 {}
 
 impl Payload for Imu10 {
     const TYPE_ID: u8 = PayloadType::Imu10.as_u8();
 }
 
-impl AsMetricsArray<10> for Imu10 {
-    /// Convert metrics to a fixed-size array for.
-    ///
-    /// # Returns
-    /// - Fixed-size array of payload members.
-    fn to_array(&self) -> [f32; 10] {
-        [
-            self.acc.acc_x,
-            self.acc.acc_y,
-            self.acc.acc_z,
-            self.gyr.gyr_x,
-            self.gyr.gyr_y,
-            self.gyr.gyr_z,
-            self.mag.mag_x,
-            self.mag.mag_y,
-            self.mag.mag_z,
-            self.baro,
-        ]
-    }
-}
-
 impl Packable for ImuQuat {}
 
 impl Payload for ImuQuat {
     const TYPE_ID: u8 = PayloadType::ImuQuat.as_u8();
-}
-
-impl AsMetricsArray<4> for ImuQuat {
-    /// Convert metrics to a fixed-size array for.
-    ///
-    /// # Returns
-    /// - Fixed-size array of payload members.
-    fn to_array(&self) -> [f32; 4] {
-        [self.w, self.x, self.y, self.z]
-    }
 }
