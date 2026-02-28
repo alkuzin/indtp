@@ -70,7 +70,7 @@ impl Header {
     /// - `false` - if payload type is vendor-specific.
     #[inline]
     pub fn is_standard_payload(&self) -> bool {
-        STANDARD_PAYLOAD_RANGE.contains(&(self.payload_type))
+        PayloadType::from(self.payload_type).is_standard()
     }
 
     /// Calculating `CRC-16` for header.

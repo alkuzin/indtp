@@ -102,7 +102,7 @@ indtp_data! {
 impl Packable for Imu3Acc {}
 
 impl Payload for Imu3Acc {
-    const TYPE_ID: u8 = PayloadType::Imu3Acc as u8;
+    const TYPE_ID: u8 = PayloadType::Imu3Acc.as_u8();
 }
 
 impl AsMetricsArray<3> for Imu3Acc {
@@ -118,7 +118,7 @@ impl AsMetricsArray<3> for Imu3Acc {
 impl Packable for Imu3Gyr {}
 
 impl Payload for Imu3Gyr {
-    const TYPE_ID: u8 = PayloadType::Imu3Gyr as u8;
+    const TYPE_ID: u8 = PayloadType::Imu3Gyr.as_u8();
 }
 
 impl AsMetricsArray<3> for Imu3Gyr {
@@ -134,7 +134,7 @@ impl AsMetricsArray<3> for Imu3Gyr {
 impl Packable for Imu3Mag {}
 
 impl Payload for Imu3Mag {
-    const TYPE_ID: u8 = PayloadType::Imu3Mag as u8;
+    const TYPE_ID: u8 = PayloadType::Imu3Mag.as_u8();
 }
 
 impl AsMetricsArray<3> for Imu3Mag {
@@ -150,7 +150,7 @@ impl AsMetricsArray<3> for Imu3Mag {
 impl Packable for Imu6 {}
 
 impl Payload for Imu6 {
-    const TYPE_ID: u8 = PayloadType::Imu6 as u8;
+    const TYPE_ID: u8 = PayloadType::Imu6.as_u8();
 }
 
 impl AsMetricsArray<6> for Imu6 {
@@ -173,7 +173,7 @@ impl AsMetricsArray<6> for Imu6 {
 impl Packable for Imu9 {}
 
 impl Payload for Imu9 {
-    const TYPE_ID: u8 = PayloadType::Imu9 as u8;
+    const TYPE_ID: u8 = PayloadType::Imu9.as_u8();
 }
 
 impl AsMetricsArray<9> for Imu9 {
@@ -199,7 +199,7 @@ impl AsMetricsArray<9> for Imu9 {
 impl Packable for Imu10 {}
 
 impl Payload for Imu10 {
-    const TYPE_ID: u8 = PayloadType::Imu10 as u8;
+    const TYPE_ID: u8 = PayloadType::Imu10.as_u8();
 }
 
 impl AsMetricsArray<10> for Imu10 {
@@ -226,7 +226,7 @@ impl AsMetricsArray<10> for Imu10 {
 impl Packable for ImuQuat {}
 
 impl Payload for ImuQuat {
-    const TYPE_ID: u8 = PayloadType::ImuQuat as u8;
+    const TYPE_ID: u8 = PayloadType::ImuQuat.as_u8();
 }
 
 impl AsMetricsArray<4> for ImuQuat {
