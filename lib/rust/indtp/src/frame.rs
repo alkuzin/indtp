@@ -226,7 +226,7 @@ impl<'a> Frame<'a> {
     /// - Protocol flags type-safe wrapper.
     #[inline]
     pub fn flags(&self) -> Flags {
-        Flags::from_bits_truncate(self.header().flags)
+        self.header().flags()
     }
 
     /// Set flags from a type-safe bitflags struct.
@@ -236,7 +236,7 @@ impl<'a> Frame<'a> {
     /// - `flags` - given protocol flags type-safe wrapper to handle.
     #[inline]
     pub fn set_flags(&mut self, flags: Flags) {
-        self.header_mut().flags = flags.bits();
+        self.header_mut().set_flags(flags);
     }
 
     /// Set protocol operating mode.
@@ -245,10 +245,9 @@ impl<'a> Frame<'a> {
     /// - `mode` - given protocol operating mode to set.
     #[inline]
     pub fn set_mode(&mut self, mode: Mode) {
-        let mut flags = self.flags();
-        flags.remove(Flags::MODE_MASK);
-        flags.insert(mode.into());
-        self.header_mut().flags = flags.bits();
+        let mut flags = self.header().flags();
+        flags.set_mode(mode);
+        self.header_mut().set_flags(flags);
     }
 
     /// Get protocol operating mode.
@@ -261,8 +260,7 @@ impl<'a> Frame<'a> {
     /// - Parse error.
     #[inline]
     pub fn mode(&self) -> Result<Mode> {
-        let flags = self.flags();
-        Mode::try_from(flags)
+        self.header().flags().mode()
     }
 
     /// Check whether data aggregation is enabled or not for payload.
@@ -272,8 +270,7 @@ impl<'a> Frame<'a> {
     /// - `false` - if single sample mode is enabled.
     #[inline]
     pub fn is_batch(&self) -> bool {
-        let flags = self.flags();
-        flags.contains(Flags::BATCH)
+        self.header().flags().is_batch()
     }
 
     /// Enable/disable data aggregation for payload.
@@ -282,9 +279,9 @@ impl<'a> Frame<'a> {
     /// - `enabled` - given flag to handle.
     #[inline]
     pub fn set_batch(&mut self, enabled: bool) {
-        let mut flags = self.flags();
-        flags.set(Flags::BATCH, enabled);
-        self.header_mut().flags = flags.bits();
+        let mut flags = self.header().flags();
+        flags.set_batch(enabled);
+        self.header_mut().set_flags(flags);
     }
 
     /// Check whether payload is encrypted or not.
@@ -294,8 +291,7 @@ impl<'a> Frame<'a> {
     /// - `false` - if payload is plaintext.
     #[inline]
     pub fn is_encrypted(&self) -> bool {
-        let flags = self.flags();
-        flags.contains(Flags::ENCRYPT)
+        self.header().flags().is_encrypted()
     }
 
     /// Set/unset payload encryption flag.
@@ -304,9 +300,9 @@ impl<'a> Frame<'a> {
     /// - `enabled` - given flag to handle.
     #[inline]
     pub fn set_encrypted(&mut self, enabled: bool) {
-        let mut flags = self.flags();
-        flags.set(Flags::ENCRYPT, enabled);
-        self.header_mut().flags = flags.bits();
+        let mut flags = self.header().flags();
+        flags.set_encrypted(enabled);
+        self.header_mut().set_flags(flags);
     }
 
     /// Check whether frame handling has high priority.
@@ -316,8 +312,7 @@ impl<'a> Frame<'a> {
     /// - `false` - if frame handling has low priority.
     #[inline]
     pub fn is_high_priority(&self) -> bool {
-        let flags = self.flags();
-        flags.contains(Flags::PRIORITY)
+        self.header().flags().is_high_priority()
     }
 
     /// Set frame handling priority.
@@ -326,9 +321,9 @@ impl<'a> Frame<'a> {
     /// - `high` - given flag to handle.
     #[inline]
     pub fn set_priority(&mut self, high: bool) {
-        let mut flags = self.flags();
-        flags.set(Flags::PRIORITY, high);
-        self.header_mut().flags = flags.bits();
+        let mut flags = self.header().flags();
+        flags.set_priority(high);
+        self.header_mut().set_flags(flags);
     }
 
     /// Get payload reference.
@@ -514,7 +509,7 @@ impl<'a> Frame<'a> {
     /// # Errors
     /// - Parse errors.
     #[inline]
-    pub fn authenticated_data(&self) -> Result<&[u8]> {
+    fn authenticated_data(&self) -> Result<&[u8]> {
         let end = HEADER_SIZE + self.payload_len;
         let data = self.buffer.get(0..end).ok_or(Error::ParseError)?;
         Ok(data)

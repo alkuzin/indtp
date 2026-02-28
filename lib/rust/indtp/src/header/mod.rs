@@ -63,6 +63,25 @@ impl Header {
         }
     }
 
+    /// Get protocol flags.
+    ///
+    /// # Returns
+    /// - Protocol flags type-safe wrapper.
+    #[inline]
+    pub fn flags(&self) -> Flags {
+        Flags::from_bits_truncate(self.flags)
+    }
+
+    /// Set flags from a type-safe bitflags struct.
+    /// Set protocol flags.
+    ///
+    /// # Parameters
+    /// - `flags` - given protocol flags type-safe wrapper to handle.
+    #[inline]
+    pub fn set_flags(&mut self, flags: Flags) {
+        self.flags = flags.bits();
+    }
+
     /// Check whether payload is standard or not.
     ///
     /// # Returns

@@ -3,7 +3,7 @@
 
 //! Protocol flags related declarations.
 
-use crate::Mode;
+use crate::prelude::*;
 use bitflags::bitflags;
 
 bitflags! {
@@ -138,4 +138,86 @@ impl Flags {
     pub const fn build(self) -> Self {
         self
     }
+
+    /// Set protocol operating mode.
+    ///
+    /// # Parameters
+    /// - `mode` - given protocol operating mode to set.
+    #[inline]
+    pub fn set_mode(&mut self, mode: Mode) {
+        self.remove(Flags::MODE_MASK);
+        self.insert(mode.into());
+    }
+
+    /// Get protocol operating mode.
+    ///
+    /// # Returns
+    /// - Protocol operating mode - in case of success.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse error.
+    #[inline]
+    pub fn mode(&self) -> Result<Mode> {
+        let mode_bits = *self & Self::MODE_MASK;
+        Mode::try_from(mode_bits)
+    }
+
+    /// Check whether data aggregation is enabled or not for payload.
+    ///
+    /// # Returns
+    /// - `true` - if batch mode is enabled.
+    /// - `false` - if single sample mode is enabled.
+    #[inline]
+    pub fn is_batch(&self) -> bool {
+        self.contains(Flags::BATCH)
+    }
+
+    /// Enable/disable data aggregation for payload.
+    ///
+    /// # Parameters
+    /// - `enabled` - given flag to handle.
+    #[inline]
+    pub fn set_batch(&mut self, enabled: bool) {
+        self.set(Flags::BATCH, enabled);
+    }
+
+    /// Check whether payload is encrypted or not.
+    ///
+    /// # Returns
+    /// - `true` - if payload is encrypted.
+    /// - `false` - if payload is plaintext.
+    #[inline]
+    pub fn is_encrypted(&self) -> bool {
+        self.contains(Flags::ENCRYPT)
+    }
+
+    /// Set/unset payload encryption flag.
+    ///
+    /// # Parameters
+    /// - `enabled` - given flag to handle.
+    #[inline]
+    pub fn set_encrypted(&mut self, enabled: bool) {
+        self.set(Flags::ENCRYPT, enabled);
+    }
+
+    /// Check whether frame handling has high priority.
+    ///
+    /// # Returns
+    /// - `true` - if frame handling has high priority.
+    /// - `false` - if frame handling has low priority.
+    #[inline]
+    pub fn is_high_priority(&self) -> bool {
+        self.contains(Flags::PRIORITY)
+    }
+
+    /// Set frame handling priority.
+    ///
+    /// # Parameters
+    /// - `high` - given flag to handle.
+    #[inline]
+    pub fn set_priority(&mut self, high: bool) {
+        self.set(Flags::PRIORITY, high);
+    }
+
 }
