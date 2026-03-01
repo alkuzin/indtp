@@ -49,19 +49,18 @@ where
     let mut buffer = [0u8; 38];
     let device_id = 0xFF;
     let payload_type: u8 = PayloadType::Imu6.into();
-    let payload_len = payload.size();
 
     // For all protocol operating modes API is almost the same.
     // Only Frame object construction is a little bit different:
     //
     // let mut frame =
-    // Frame::new_lite(&mut buffer, device_id, payload_type, payload_len)?;
+    // Frame::new_lite(&mut buffer, device_id, payload_type)?;
     // or:
-    // Frame::new_verified(&mut buffer, device_id, payload_type, payload_len)?;
+    // Frame::new_verified(&mut buffer, device_id, payload_type)?;
     // or:
-    // Frame::new_trusted(&mut buffer, device_id, payload_type, payload_len)?;
+    // Frame::new_trusted(&mut buffer, device_id, payload_type)?;
     // or:
-    // Frame::new_critical(&mut buffer, device_id, payload_type, payload_len)?;
+    // Frame::new_critical(&mut buffer, device_id, payload_type)?;
     //
     // For custom frame set up the one should use Frame::new() method:
     //
@@ -69,7 +68,6 @@ where
     //     &mut buffer,
     //     device_id,
     //     payload_type,
-    //     payload_len,
     //     Flags::new()
     //         .with_mode(Mode::Verified)
     //         .with_encryption(true)
@@ -78,7 +76,7 @@ where
     //         .build(),
     // );
     let mut frame =
-        Frame::new_lite(&mut buffer, device_id, payload_type, payload_len)?;
+        Frame::new_lite(&mut buffer, device_id, payload_type)?;
 
     // Setting payload, sequence number & packing frame.
     frame.set_payload(&payload)?;

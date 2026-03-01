@@ -49,10 +49,9 @@ where
     let mut buffer = [0u8; 70];
     let device_id = 0xFF;
     let payload_type: u8 = PayloadType::Imu6.into();
-    let payload_len = payload.size();
 
     let mut frame =
-        Frame::new_critical(&mut buffer, device_id, payload_type, payload_len)?;
+        Frame::new_critical(&mut buffer, device_id, payload_type)?;
 
     // Encrypting payload & packing frame.
     frame.set_payload(&payload)?;

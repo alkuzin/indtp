@@ -27,7 +27,9 @@ pub struct Frame<'a> {
     /// Frame buffer.
     buffer: &'a mut [u8],
     /// Payload length in bytes.
-    payload_len: usize,
+    pub(crate) payload_len: usize,
+    /// Payload capacity in bytes.
+    payload_capacity: usize,
     /// Frame trailer length in bytes.
     trailer_len: usize,
 }
@@ -39,7 +41,6 @@ impl<'a> Frame<'a> {
     /// - `buffer` - given buffer to handle.
     /// - `device_id` - given unique identifier of the source navigation node.
     /// - `payload_type` - given type of frame payload.
-    /// - `payload_len` - given payload length in bytes.
     ///
     /// # Returns
     /// - New INDTP frame - in case of success.
@@ -55,10 +56,9 @@ impl<'a> Frame<'a> {
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
-        payload_len: usize,
     ) -> Result<Self> {
         let flags = Flags::new().with_mode(Mode::Lite).build();
-        Self::new(buffer, device_id, payload_type, payload_len, flags)
+        Self::new(buffer, device_id, payload_type, flags)
     }
 
     /// Construct new INDTP frame in `Verified` operating mode.
@@ -67,7 +67,6 @@ impl<'a> Frame<'a> {
     /// - `buffer` - given buffer to handle.
     /// - `device_id` - given unique identifier of the source navigation node.
     /// - `payload_type` - given type of frame payload.
-    /// - `payload_len` - given payload length in bytes.
     ///
     /// # Returns
     /// - New INDTP frame - in case of success.
@@ -83,10 +82,9 @@ impl<'a> Frame<'a> {
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
-        payload_len: usize,
     ) -> Result<Self> {
         let flags = Flags::new().with_mode(Mode::Verified).build();
-        Self::new(buffer, device_id, payload_type, payload_len, flags)
+        Self::new(buffer, device_id, payload_type, flags)
     }
 
     /// Construct new INDTP frame in `Trusted` operating mode.
@@ -95,7 +93,6 @@ impl<'a> Frame<'a> {
     /// - `buffer` - given buffer to handle.
     /// - `device_id` - given unique identifier of the source navigation node.
     /// - `payload_type` - given type of frame payload.
-    /// - `payload_len` - given payload length in bytes.
     ///
     /// # Returns
     /// - New INDTP frame - in case of success.
@@ -111,10 +108,9 @@ impl<'a> Frame<'a> {
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
-        payload_len: usize,
     ) -> Result<Self> {
         let flags = Flags::new().with_mode(Mode::Trusted).build();
-        Self::new(buffer, device_id, payload_type, payload_len, flags)
+        Self::new(buffer, device_id, payload_type, flags)
     }
 
     /// Construct new INDTP frame in `Critical` operating mode.
@@ -123,7 +119,6 @@ impl<'a> Frame<'a> {
     /// - `buffer` - given buffer to handle.
     /// - `device_id` - given unique identifier of the source navigation node.
     /// - `payload_type` - given type of frame payload.
-    /// - `payload_len` - given payload length in bytes.
     ///
     /// # Returns
     /// - New INDTP frame - in case of success.
@@ -139,10 +134,9 @@ impl<'a> Frame<'a> {
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
-        payload_len: usize,
     ) -> Result<Self> {
         let flags = Flags::new().with_mode(Mode::Critical).build();
-        Self::new(buffer, device_id, payload_type, payload_len, flags)
+        Self::new(buffer, device_id, payload_type, flags)
     }
 
     /// Construct new INDTP frame.
@@ -151,7 +145,6 @@ impl<'a> Frame<'a> {
     /// - `buffer` - given buffer to handle.
     /// - `device_id` - given unique identifier of the source navigation node.
     /// - `payload_type` - given type of frame payload.
-    /// - `payload_len` - given payload length in bytes.
     /// - `flags` - given protocol flags to handle.
     ///
     /// # Returns
@@ -166,19 +159,20 @@ impl<'a> Frame<'a> {
         buffer: &'a mut [u8],
         device_id: u8,
         payload_type: u8,
-        payload_len: usize,
         flags: Flags,
     ) -> Result<Self> {
-        if payload_len > PAYLOAD_MAX_SIZE {
-            return Err(Error::BufferOverflow);
-        }
-
         let mode = Mode::try_from(flags).map_err(|_| Error::ParseError)?;
         let trailer_len = Self::trailer_len_from_mode(mode);
-        let total_len = HEADER_SIZE + payload_len + trailer_len;
+        let metadata_len = HEADER_SIZE + trailer_len;
 
-        if buffer.len() < total_len {
+        if buffer.len() < metadata_len {
             return Err(Error::BufferUnderflow);
+        }
+
+        let payload_capacity = buffer.len() - metadata_len;
+
+        if payload_capacity > PAYLOAD_MAX_SIZE {
+            return Err(Error::BufferOverflow);
         }
 
         let header_ptr = buffer.as_mut_ptr() as *mut Header;
@@ -190,11 +184,12 @@ impl<'a> Frame<'a> {
         header.device_id = device_id;
         header.payload_type = payload_type;
         header.sequence = U16::new(0);
-        header.payload_len = U16::new(payload_len as u16);
+        header.payload_len = U16::new(0u16);
 
         Ok(Self {
             buffer,
-            payload_len,
+            payload_len: 0,
+            payload_capacity,
             trailer_len: Self::trailer_len_from_mode(mode),
         })
     }
@@ -379,6 +374,42 @@ impl<'a> Frame<'a> {
         Ok(data)
     }
 
+    /// Get payload buffer reference.
+    ///
+    /// # Returns
+    /// - Reference to the whole payload buffer byte slice.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse errors.
+    #[inline]
+    pub fn payload_buf(&self) -> Result<&[u8]> {
+        let begin = HEADER_SIZE;
+        let data = self
+            .buffer
+            .get(begin..begin + self.payload_capacity)
+            .ok_or(Error::ParseError)?;
+        Ok(data)
+    }
+
+    /// Get mutable payload buffer reference.
+    ///
+    /// # Returns
+    /// - Mutable reference to the whole payload buffer byte slice.
+    /// - `Err` - otherwise.
+    ///
+    /// # Errors
+    /// - Parse errors.
+    #[inline]
+    pub fn payload_buf_mut(&mut self) -> Result<&mut [u8]> {
+        let begin = HEADER_SIZE;
+        let data = self
+            .buffer
+            .get_mut(begin..begin + self.payload_capacity)
+            .ok_or(Error::ParseError)?;
+        Ok(data)
+    }
+
     /// Get frame trailer reference.
     ///
     /// # Returns
@@ -422,8 +453,18 @@ impl<'a> Frame<'a> {
     /// - Payload length in bytes.
     #[allow(unused)]
     #[inline]
-    pub(crate) fn payload_len(&self) -> usize {
+    pub fn payload_len(&self) -> usize {
         self.payload_len
+    }
+
+    /// Get frame payload capacity.
+    ///
+    /// # Returns
+    /// - Payload capacity in bytes.
+    #[allow(unused)]
+    #[inline]
+    pub fn payload_capacity(&self) -> usize {
+        self.payload_capacity
     }
 
     /// Get frame trailer length.
@@ -470,19 +511,24 @@ impl<'a> Frame<'a> {
         bytes: &[u8],
         payload_type: u8,
     ) -> Result<()> {
-        let payload_len = bytes.len();
+        let data_len = bytes.len();
 
-        if payload_len > PAYLOAD_MAX_SIZE {
+        if data_len > PAYLOAD_MAX_SIZE {
             return Err(Error::BufferOverflow);
         }
 
-        self.payload_mut()?.copy_from_slice(bytes);
+        let payload = self.payload_buf_mut()?;
+        let len = payload.len().min(data_len);
+
+        payload.get_mut(..len)
+            .ok_or(Error::ParseError)?
+            .copy_from_slice(&bytes);
 
         #[allow(clippy::cast_possible_truncation)]
         {
             self.header_mut().payload_type = payload_type;
-            self.header_mut().payload_len = U16::new(payload_len as u16);
-            self.payload_len = payload_len;
+            self.header_mut().payload_len = U16::new(data_len as u16);
+            self.payload_len = data_len;
         }
 
         Ok(())
@@ -642,6 +688,28 @@ impl<'a> Frame<'a> {
         Ok(())
     }
 
+    /// Wrap existing frame.
+    ///
+    /// # Parameters
+    /// - `buffer` - given buffer to handle.
+    /// - `payload_len` - given payload length in bytes.
+    /// - `mode` - given protocol operating mode to handle.
+    ///
+    /// # Returns
+    /// - Wrapped frame.
+    fn wrap(buffer: &'a mut [u8], payload_len: usize, mode: Mode) -> Self {
+        let trailer_len = Self::trailer_len_from_mode(mode);
+        let metadata_len = HEADER_SIZE + trailer_len;
+        let payload_capacity = buffer.len() - metadata_len;
+
+        Self {
+            buffer,
+            payload_len,
+            payload_capacity,
+            trailer_len: Self::trailer_len_from_mode(mode),
+        }
+    }
+
     /// Parse frame from raw bytes.
     ///
     /// # Parameters
@@ -666,26 +734,17 @@ impl<'a> Frame<'a> {
         I: IntegrityEngine,
         C: CryptographyEngine,
     {
-        match Header::validate::<I>(buffer) {
-            Ok(_) => {
-                let header = Header::from_bytes(buffer)
-                    .map_err(|_| Error::ParseError)?;
+        Header::validate::<I>(buffer)?;
+        let header = Header::from_bytes(buffer)
+            .map_err(|_| Error::ParseError)?;
 
-                let mut frame = Self::new(
-                    buffer,
-                    header.device_id,
-                    header.payload_type,
-                    header.payload_len.into(),
-                    Flags::from_bits(header.flags).ok_or(Error::ParseError)?,
-                )
-                .map_err(|_| Error::ParseError)?;
+        let mode = Mode::try_from(header.flags())
+        .map_err(|_| Error::ParseError)?;
 
-                frame.set_sequence(header.sequence.get());
-                frame.validate_trailer::<I, C>(keys)?;
-                Ok(frame)
-            }
-            Err(e) => Err(e),
-        }
+        let frame = Self::wrap(buffer, header.payload_len.into(), mode);
+        frame.validate_trailer::<I, C>(keys)?;
+
+        Ok(frame)
     }
 
     /// Pack frame to raw bytes.
@@ -768,7 +827,7 @@ impl<'a> Frame<'a> {
     /// - Parse errors.
     pub fn start_batch(&mut self) -> Result<Batch<'_, 'a>> {
         if self.is_batch() {
-            if self.payload_len < 1 {
+            if self.payload_capacity < 1 {
                 return Err(Error::BufferOverflow);
             }
 
@@ -832,11 +891,11 @@ impl<'a> Frame<'a> {
 
         let required_len = 4 + data.len();
 
-        if required_len > self.payload_len() {
+        if required_len > self.payload_capacity() {
             return Err(Error::BufferOverflow);
         }
 
-        let payload = self.payload_mut()?;
+        let payload = self.payload_buf_mut()?;
 
         payload
             .get_mut(0..4)
@@ -847,6 +906,9 @@ impl<'a> Frame<'a> {
             .get_mut(4..required_len)
             .ok_or(Error::ParseError)?
             .copy_from_slice(data);
+
+        self.payload_len = required_len;
+        self.header_mut().payload_len = U16::from(required_len as u16);
 
         Ok(())
     }
@@ -950,7 +1012,6 @@ mod tests {
             &mut buffer,
             0xAB,
             0x00,
-            0x06,
             Flags::new()
                 .with_mode(Mode::Lite)
                 .with_batch(true)
@@ -964,13 +1025,13 @@ mod tests {
     #[test]
     fn test_frame_creation_failed() {
         let mut buffer = [0_u8; 3];
-        let frame = Frame::new_lite(&mut buffer, 0xAB, 0x00, 0x06);
+        let frame = Frame::new_lite(&mut buffer, 0xAB, 0x00);
         assert!(frame.is_err());
     }
 
     /// Auxiliary function for creating INDTP frame for tests.
     fn create_test_frame(buffer: &'_ mut [u8]) -> Frame<'_> {
-        Frame::new_lite(buffer, 0xAB, 0x00, 0x06).unwrap()
+        Frame::new_lite(buffer, 0xAB, 0x00).unwrap()
     }
 
     #[test]
@@ -1044,11 +1105,11 @@ mod tests {
     ) {
         let flags = Flags::new().with_mode(mode).build();
 
-        let mut frame = Frame::new(buffer, 0xAB, 0x00, payload.len(), flags)
+        let mut frame = Frame::new(buffer, 0xAB, 0x00, flags)
             .expect("Failed to create frame skeleton");
 
         frame
-            .set_payload_raw(payload, 0x7F)
+            .set_payload_raw(payload, 0x00)
             .expect("Failed to set payload");
 
         let keys = CryptoKeys::new([0x42; 16], [0x55; 32]);
@@ -1157,13 +1218,11 @@ mod tests {
     fn setup_frame_for_batch_tests(
         buffer: &mut [u8],
         batch_mode: bool,
-        payload_len: usize,
     ) -> Frame<'_> {
         Frame::new(
             buffer,
             0xAB,
             0x00,
-            payload_len,
             Flags::new()
                 .with_mode(Mode::Lite)
                 .with_batch(batch_mode)
@@ -1175,7 +1234,7 @@ mod tests {
     #[test]
     fn test_single_sample_mode() {
         let mut buffer = [0u8; 32];
-        let mut frame = setup_frame_for_batch_tests(&mut buffer, false, 10);
+        let mut frame = setup_frame_for_batch_tests(&mut buffer, false);
 
         frame.push_single_sample(1000, &[0xAA, 0xBB]).unwrap();
 
@@ -1188,7 +1247,7 @@ mod tests {
     #[test]
     fn test_batch_delta_encoding() {
         let mut buffer = [0u8; 34];
-        let mut frame = setup_frame_for_batch_tests(&mut buffer, true, 20);
+        let mut frame = setup_frame_for_batch_tests(&mut buffer, true);
 
         {
             let mut batch = frame.start_batch().unwrap();
@@ -1208,24 +1267,22 @@ mod tests {
 
     #[test]
     fn test_buffer_overflow_protection() {
-        let mut buffer = [0u8; 32];
-        let mut frame = setup_frame_for_batch_tests(&mut buffer, false, 5);
+        let mut buffer = [0u8; 19];
+        let mut frame = setup_frame_for_batch_tests(&mut buffer, false);
 
         let err = frame.push_single_sample(12345, &[0x01, 0x02]).unwrap_err();
         assert!(matches!(err, Error::BufferOverflow));
-        assert_eq!(frame.payload().unwrap()[0], 0);
+        assert_eq!(frame.payload().unwrap().len(), 0);
     }
 
     fn setup_frame_for_encryption_tests(
         buffer: &mut [u8],
         encryption: bool,
-        payload_len: usize,
     ) -> Frame<'_> {
         Frame::new(
             buffer,
             0xAB,
             0x00,
-            payload_len,
             Flags::new()
                 .with_mode(Mode::Critical)
                 .with_encryption(encryption)
@@ -1241,7 +1298,6 @@ mod tests {
         let mut frame = setup_frame_for_encryption_tests(
             &mut buffer,
             true,
-            original_data.len(),
         );
 
         let keys = CryptoKeys::new([0x42; 16], [0x42; 32]);
@@ -1260,7 +1316,7 @@ mod tests {
     #[test]
     fn test_encrypt_without_flag_fails() {
         let mut buffer = [0u8; 64];
-        let mut frame = setup_frame_for_encryption_tests(&mut buffer, false, 8);
+        let mut frame = setup_frame_for_encryption_tests(&mut buffer, false);
         let keys = CryptoKeys::new([0x42; 16], [0x42; 32]);
         let res = frame.encrypt::<SwCryptoEngine>(&keys);
 
@@ -1274,14 +1330,14 @@ mod tests {
         let data = [0x55; 16];
 
         let mut frame1 =
-            setup_frame_for_encryption_tests(&mut buffer1, true, data.len());
-        frame1.payload_mut().unwrap().copy_from_slice(&data);
-        frame1.header_mut().sequence = 1.into();
+            setup_frame_for_encryption_tests(&mut buffer1, true);
+        frame1.set_payload_raw(&data, 0x7F).unwrap();
+        frame1.set_sequence(1);
 
         let mut frame2 =
-            setup_frame_for_encryption_tests(&mut buffer2, true, data.len());
-        frame2.payload_mut().unwrap().copy_from_slice(&data);
-        frame2.header_mut().sequence = 2.into();
+            setup_frame_for_encryption_tests(&mut buffer2, true);
+        frame2.set_payload_raw(&data, 0x7F).unwrap();
+        frame2.set_sequence(2);
 
         let keys = CryptoKeys::new([0x42; 16], [0x42; 32]);
 
@@ -1294,7 +1350,7 @@ mod tests {
     #[test]
     fn test_read_single_sample_batch_mode_error() {
         let mut buffer = [0u8; 64];
-        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 16).unwrap();
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00).unwrap();
 
         frame.set_batch(true);
         assert_eq!(frame.read_single_sample(), Err(Error::InvalidOperation));
@@ -1303,20 +1359,17 @@ mod tests {
     #[test]
     fn test_read_single_sample_short_payload() {
         let mut buffer = [0u8; 64];
-        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 3).unwrap();
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00).unwrap();
 
         frame.set_batch(false);
-        frame
-            .payload_mut()
-            .unwrap()
-            .copy_from_slice(&[0x01, 0x02, 0x03]);
+        frame.set_payload_raw(&[0xAA, 0xBB, 0xCC], 0).unwrap();
         assert_eq!(frame.read_single_sample(), Err(Error::ParseError));
     }
 
     #[test]
     fn test_read_single_sample_empty_payload() {
         let mut buffer = [0u8; 64];
-        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 0).unwrap();
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00).unwrap();
 
         frame.set_batch(false);
         assert_eq!(frame.read_single_sample(), Err(Error::ParseError));
@@ -1325,9 +1378,8 @@ mod tests {
     #[test]
     fn test_read_single_sample_zero_data() {
         let mut buffer = [0u8; 64];
-        let payload_len = 4;
         let mut frame =
-            Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
+            Frame::new_lite(&mut buffer, 0x01, 0x00).unwrap();
 
         let original_ts = 0xFFFF_FFFFu32;
         frame.push_single_sample(original_ts, &[]).unwrap();
@@ -1341,7 +1393,7 @@ mod tests {
     #[test]
     fn test_read_batch_samples_single_mode_error() {
         let mut buffer = [0u8; 64];
-        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 16).unwrap();
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00).unwrap();
         frame.set_batch(false);
 
         assert_eq!(frame.read_batch_samples(8), Err(Error::InvalidOperation));
@@ -1350,21 +1402,19 @@ mod tests {
     #[test]
     fn test_read_batch_samples_empty_batch() {
         let mut buffer = [0u8; 64];
-        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 1).unwrap();
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00).unwrap();
 
         frame.set_batch(true);
-        frame.payload_mut().unwrap()[0] = 0;
+        frame.payload_buf_mut().unwrap()[0] = 0;
 
-        let iterator = frame.read_batch_samples(8).unwrap();
-        assert_eq!(iterator.count(), 0);
+        assert_eq!(frame.read_batch_samples(8), Err(Error::ParseError));
     }
 
     #[test]
     fn test_read_batch_samples_delta_reconstruction() {
         let mut buffer = [0u8; 128];
-        let payload_len = 1 + 4 + 4 + 2 * (2 + 4);
         let mut frame =
-            Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
+            Frame::new_lite(&mut buffer, 0x01, 0x00).unwrap();
         frame.set_batch(true);
 
         let mut batch = frame.start_batch().unwrap();
@@ -1395,9 +1445,8 @@ mod tests {
     #[test]
     fn test_read_batch_samples_wraparound_delta() {
         let mut buffer = [0u8; 128];
-        let payload_len = 1 + 4 + 4 + (2 + 4);
         let mut frame =
-            Frame::new_lite(&mut buffer, 0x01, 0x00, payload_len).unwrap();
+            Frame::new_lite(&mut buffer, 0x01, 0x00).unwrap();
         frame.set_batch(true);
 
         let mut batch = frame.start_batch().unwrap();
@@ -1422,7 +1471,7 @@ mod tests {
     #[test]
     fn test_read_batch_samples_malformed_payload() {
         let mut buffer = [0u8; 64];
-        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x00, 10).unwrap();
+        let mut frame = Frame::new_lite(&mut buffer, 0x01, 0x7F).unwrap();
 
         frame.set_batch(true);
         frame

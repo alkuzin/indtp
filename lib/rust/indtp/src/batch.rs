@@ -53,11 +53,11 @@ impl<'b, 'a> Batch<'b, 'a> {
 
         let required_len = 1 + self.offset + timestamp_size + data.len();
 
-        if required_len > self.frame.payload_len() {
+        if required_len > self.frame.payload_capacity() {
             return Err(Error::BufferOverflow);
         }
 
-        let payload = self.frame.payload_mut()?;
+        let payload = self.frame.payload_buf_mut()?;
         let current_pos = 1 + self.offset;
 
         if is_first {
@@ -92,6 +92,7 @@ impl<'b, 'a> Batch<'b, 'a> {
             .copy_from_slice(data);
 
         self.offset += data.len();
+        self.frame.payload_len = self.offset + 1;
         self.sample_count += 1;
 
         Ok(())

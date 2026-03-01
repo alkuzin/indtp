@@ -35,10 +35,9 @@ where
     let mut buffer = [0u8; 64];
     let device_id = 0xFF;
     let payload_type: u8 = PayloadType::Imu6.into();
-    let payload_len = size_of::<Imu3Acc>();
 
     let mut frame =
-        Frame::new_lite(&mut buffer, device_id, payload_type, payload_len + 4)?;
+        Frame::new_lite(&mut buffer, device_id, payload_type,)?;
 
     let sample = Imu3Acc {
         acc_x: 1.4.into(),
@@ -91,10 +90,9 @@ where
     let mut buffer = [0u8; 156];
     let device_id = 0xFF;
     let payload_type: u8 = PayloadType::Imu6.into();
-    let payload_len = 128;
 
     let mut frame =
-        Frame::new_lite(&mut buffer, device_id, payload_type, payload_len)?;
+        Frame::new_lite(&mut buffer, device_id, payload_type)?;
 
     // Enabling data aggregation mode.
     frame.set_batch(true);
