@@ -80,8 +80,10 @@ where
     let mut frame =
         Frame::new_lite(&mut buffer, device_id, payload_type, payload_len)?;
 
-    // Setting payload & packing frame.
+    // Setting payload, sequence number & packing frame.
     frame.set_payload(&payload)?;
+    frame.set_sequence(1234);
+
     let frame_size = frame.pack::<I, C>(None)?;
     println!("Frame size: {} bytes", frame_size);
 
@@ -102,8 +104,10 @@ where
     let header = frame.header();
     let payload_bytes = frame.payload()?;
     let payload = Imu6::from_bytes(payload_bytes)?;
+    let sequence = frame.sequence();
 
     println!("Parsed device ID: {:#02X}", header.device_id);
+    println!("Parsed sequence number: {sequence}");
     println!("Payload length: {} bytes", payload.size());
     println!("Payload (hex): {:02X?}", payload_bytes);
     println!("Payload:\n{:#?}", payload);

@@ -671,7 +671,7 @@ impl<'a> Frame<'a> {
                 let header = Header::from_bytes(buffer)
                     .map_err(|_| Error::ParseError)?;
 
-                let frame = Self::new(
+                let mut frame = Self::new(
                     buffer,
                     header.device_id,
                     header.payload_type,
@@ -680,6 +680,7 @@ impl<'a> Frame<'a> {
                 )
                 .map_err(|_| Error::ParseError)?;
 
+                frame.set_sequence(header.sequence.get());
                 frame.validate_trailer::<I, C>(keys)?;
                 Ok(frame)
             }
