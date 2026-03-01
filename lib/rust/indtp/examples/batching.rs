@@ -41,9 +41,9 @@ where
         Frame::new_lite(&mut buffer, device_id, payload_type, payload_len + 4)?;
 
     let sample = Imu3Acc {
-        acc_x: 1.4,
-        acc_y: 2.5,
-        acc_z: 3.6,
+        acc_x: 1.4.into(),
+        acc_y: 2.5.into(),
+        acc_z: 3.6.into(),
     };
     let timestamp: u32 = 12345;
 
@@ -104,25 +104,25 @@ where
         (
             1_000_000u32,
             Imu3Acc {
-                acc_x: 1.0,
-                acc_y: 2.0,
-                acc_z: 3.0,
+                acc_x: 1.0.into(),
+                acc_y: 2.0.into(),
+                acc_z: 3.0.into(),
             },
         ),
         (
             1_000_100u32,
             Imu3Acc {
-                acc_x: 2.0,
-                acc_y: 4.0,
-                acc_z: 9.0,
+                acc_x: 2.0.into(),
+                acc_y: 4.0.into(),
+                acc_z: 9.0.into(),
             },
         ),
         (
             1_000_150u32,
             Imu3Acc {
-                acc_x: 3.0,
-                acc_y: 8.0,
-                acc_z: 1.0,
+                acc_x: 3.0.into(),
+                acc_y: 8.0.into(),
+                acc_z: 1.0.into(),
             },
         ),
     ];

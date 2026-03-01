@@ -34,14 +34,14 @@ where
     // Preparing data to send.
     let payload = Imu6 {
         acc: Imu3Acc {
-            acc_x: 1.7,
-            acc_y: 2.8,
-            acc_z: 3.9,
+            acc_x: 1.7.into(),
+            acc_y: 2.8.into(),
+            acc_z: 3.9.into(),
         },
         gyr: Imu3Gyr {
-            gyr_x: 4.0,
-            gyr_y: 5.1,
-            gyr_z: 6.2,
+            gyr_x: 4.0.into(),
+            gyr_y: 5.1.into(),
+            gyr_z: 6.2.into(),
         },
     };
 

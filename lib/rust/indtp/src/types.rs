@@ -9,6 +9,7 @@ use core::{
     fmt::{Display, Formatter},
     result,
 };
+pub use zerocopy::little_endian::*;
 
 /// Protocol errors enumeration.
 #[derive(Debug, PartialEq)]

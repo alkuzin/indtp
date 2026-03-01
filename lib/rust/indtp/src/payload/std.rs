@@ -12,13 +12,13 @@ indtp_data! {
     pub struct Imu3Acc {
         /// Acceleration along the X-axis in
         /// meters per second squared (`m/s²`).
-        pub acc_x: f32,
+        pub acc_x: F32,
         /// Acceleration along the Y-axis in
         /// meters per second squared (`m/s²`).
-        pub acc_y: f32,
+        pub acc_y: F32,
         /// Acceleration along the Z-axis in
         /// meters per second squared (`m/s²`).
-        pub acc_z: f32,
+        pub acc_z: F32,
     }
 
     /// Gyroscope only (for 3-axis sensor).
@@ -26,13 +26,13 @@ indtp_data! {
     pub struct Imu3Gyr {
         /// Angular velocity along the X-axis in
         /// radians per second (`rad/s`).
-        pub gyr_x: f32,
+        pub gyr_x: F32,
         /// Angular velocity along the Y-axis in
         /// radians per second (`rad/s`).
-        pub gyr_y: f32,
+        pub gyr_y: F32,
         /// Angular velocity along the Z-axis in
         /// radians per second (`rad/s`).
-        pub gyr_z: f32,
+        pub gyr_z: F32,
     }
 
     /// Magnetometer only (for 3-axis sensor).
@@ -40,13 +40,13 @@ indtp_data! {
     pub struct Imu3Mag {
         /// Magnetic field induction along the X-axis in
         /// microteslas (`μT`).
-        pub mag_x: f32,
+        pub mag_x: F32,
         /// Magnetic field induction along the Y-axis in
         /// microteslas (`μT`).
-        pub mag_y: f32,
+        pub mag_y: F32,
         /// Magnetic field induction along the Z-axis in
         /// microteslas (`μT`).
-        pub mag_z: f32,
+        pub mag_z: F32,
     }
 
     /// Accelerometer + Gyroscope readings (for 6-axis sensor).
@@ -81,7 +81,7 @@ indtp_data! {
         /// Magnetometer readings along 3 axes.
         pub mag: Imu3Mag,
         /// Atmospheric pressure in Pascals (`Pa`).
-        pub baro: f32,
+        pub baro: F32,
     }
 
     /// Attitude. Hamiltonian Quaternion (w, x, y, z).
@@ -89,13 +89,13 @@ indtp_data! {
     #[derive(Default)]
     pub struct ImuQuat {
         /// Scalar component.
-        pub w: f32,
+        pub w: F32,
         /// Vector X component.
-        pub x: f32,
+        pub x: F32,
         /// Vector Y component.
-        pub y: f32,
+        pub y: F32,
         /// Vector Z component.
-        pub z: f32,
+        pub z: F32,
     }
 }
 
