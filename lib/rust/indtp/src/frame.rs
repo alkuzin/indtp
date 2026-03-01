@@ -4,7 +4,6 @@
 //! INDTP frame related declarations.
 
 use crate::prelude::*;
-use zerocopy::little_endian::{U16, U32};
 
 /// Maximum Transmission Unit (MTU) size in bytes.
 ///
@@ -324,6 +323,24 @@ impl<'a> Frame<'a> {
         let mut flags = self.header().flags();
         flags.set_priority(high);
         self.header_mut().set_flags(flags);
+    }
+
+    /// Set frame sequence number.
+    ///
+    /// # Parameters
+    /// - `seq` - given sequnence number to set.
+    #[inline]
+    pub fn set_sequence(&mut self, seq: u16) {
+        self.header_mut().sequence = U16::new(seq);
+    }
+
+    /// Get frame sequence number.
+    ///
+    /// # Returns
+    /// - Frame sequence number.
+    #[inline]
+    pub fn sequence(&self) -> u16 {
+        self.header().sequence.get()
     }
 
     /// Get payload reference.
