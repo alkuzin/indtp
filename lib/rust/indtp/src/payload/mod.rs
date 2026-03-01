@@ -34,6 +34,16 @@ pub trait Payload: Sized + Packable {
     fn payload_type() -> u8 {
         Self::TYPE_ID
     }
+
+    /// Get payload length.
+    ///
+    /// # Returns
+    /// - Payload length in bytes.
+    #[inline]
+    #[must_use]
+    fn len() -> usize {
+        size_of::<Self>()
+    }
 }
 
 /// Enumeration of standard payload types.
