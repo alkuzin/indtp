@@ -768,6 +768,7 @@ impl<'a> Frame<'a> {
         I: IntegrityEngine,
         C: CryptographyEngine,
     {
+        self.header_mut().payload_len = U16::from(self.payload_len as u16);
         let crc = self.header().compute_crc::<I>()?;
         self.header_mut().crc = U16::from(crc);
         self.write_trailer::<I, C>(keys)?;
